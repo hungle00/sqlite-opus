@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLite Opus - Database Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SQLite Opus</h1>
+            <p class="subtitle">SQLite Database Query Dashboard</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Connection Panel -->
+            <section class="panel connection-panel">
+                <h2>Database Connection</h2>
+                <div class="connection-form">
+                    <input 
+                        type="text" 
+                        id="db-path" 
+                        placeholder="Path to SQLite database file"
+                        value=""
+                    >
+                    <div class="button-group">
+                        <button id="connect-btn" class="btn btn-primary">Connect</button>
+                        <button id="disconnect-btn" class="btn btn-secondary" disabled>Disconnect</button>
+                    </div>
+                    <div id="connection-status" class="status-message"></div>
+                </div>
+            </section>
+
+            <!-- Tables Panel -->
+            <section class="panel tables-panel">
+                <h2>Tables</h2>
+                <div id="tables-list" class="tables-list">
+                    <p class="empty-message">Connect to a database to see tables</p>
+                </div>
+            </section>
+
+            <!-- Query Panel -->
+            <section class="panel query-panel">
+                <h2>Query Editor</h2>
+                <textarea 
+                    id="query-editor" 
+                    placeholder="Enter your SQL query here..."
+                    rows="10"
+                ></textarea>
+                <div class="button-group">
+                    <button id="execute-btn" class="btn btn-primary" disabled>Execute Query</button>
+                    <button id="clear-btn" class="btn btn-secondary">Clear</button>
+                </div>
+            </section>
+
+            <!-- Results Panel -->
+            <section class="panel results-panel">
+                <h2>Query Results</h2>
+                <div id="results-container" class="results-container">
+                    <p class="empty-message">Execute a query to see results</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

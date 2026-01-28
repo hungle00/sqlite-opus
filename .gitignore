@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.sqlite3
+
+# Package build artifacts
+*.egg-info/
+dist/
+build/
+*.eggw
+*.pyz

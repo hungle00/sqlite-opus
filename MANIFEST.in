@@ -1,0 +1,7 @@
+# Include package data files
+include README.md
+include LICENSE
+recursive-include sqlite_opus/templates *
+recursive-include sqlite_opus/static *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
