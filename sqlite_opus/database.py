@@ -20,15 +20,6 @@ class DatabaseManager:
         self._lock = threading.Lock()
     
     def connect(self, db_path: str) -> bool:
-        """
-        Connect to a SQLite database.
-        
-        Args:
-            db_path: Path to SQLite database file
-            
-        Returns:
-            True if connection successful, False otherwise
-        """
         try:
             path = Path(db_path)
             if not path.exists():
@@ -49,7 +40,6 @@ class DatabaseManager:
             return False
     
     def disconnect(self):
-        """Close current database connection."""
         with self._lock:
             if self.connection:
                 self.connection.close()
@@ -57,15 +47,6 @@ class DatabaseManager:
                 self.current_db_path = None
     
     def execute_query(self, query: str) -> Dict[str, Any]:
-        """
-        Execute a SQL query.
-        
-        Args:
-            query: SQL query string
-            
-        Returns:
-            Dictionary with results, columns, and error info
-        """
         if not self.connection:
             return {
                 "success": False,
@@ -104,12 +85,6 @@ class DatabaseManager:
                 }
     
     def get_tables(self) -> List[str]:
-        """
-        Get list of all tables in the database.
-        
-        Returns:
-            List of table names
-        """
         if not self.connection:
             return []
         
@@ -124,33 +99,51 @@ class DatabaseManager:
                 return []
     
     def get_table_schema(self, table_name: str) -> Dict[str, Any]:
-        """
-        Get schema information for a table.
-        
-        Args:
-            table_name: Name of the table
-            
-        Returns:
-            Dictionary with schema information
-        """
         if not self.connection:
             return {"success": False, "error": "No database connection"}
         
         with self._lock:
             try:
                 cursor = self.connection.cursor()
-                cursor.execute(f"PRAGMA table_info({table_name})")
-                columns = [dict(row) for row in cursor.fetchall()]
-                
-                return {
-                    "success": True,
-                    "columns": columns
-                }
+                cursor.execute(
+                    "SELECT sql FROM sqlite_master WHERE tbl_name = ? AND type IN ('table', 'view')", 
+                    (table_name,)
+                )
+                result = cursor.fetchone()
+                if result:
+                    return {
+                        "success": True,
+                        "schema": result[0]
+                    }
+                else:
+                    return {"success": False, "error": "Table not found"}
             except Exception as e:
                 return {
                     "success": False,
                     "error": str(e)
                 }
+
+        def get_all_columns(self, table_name: str) -> List[str]:
+            with self._lock:
+                try:
+                    cursor = self.connection.cursor()
+                    cursor.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                    )
+                    return [row[0] for row in cursor.fetchall()]
+                except Exception:
+                    return []
+
+        def get_all_indexes(self, table_name: str) -> List[str]:
+            with self._lock:
+                try:
+                    cursor = self.connection.cursor()
+                    cursor.execute(
+                        "SELECT name FROM sqlite_master WHERE type='index' ORDER BY name"
+                    )
+                    return [row[0] for row in cursor.fetchall()]
+                except Exception:
+                    return []
     
     def is_connected(self) -> bool:
         """Check if database is connected."""

@@ -18,45 +18,63 @@ async function apiRequest(url, method = 'GET', data = null) {
 }
 
 // Connection management (only if connection panel exists)
-const connectBtn = document.getElementById('connect-btn');
-const disconnectBtn = document.getElementById('disconnect-btn');
-const dbPathInput = document.getElementById('db-path');
 const statusEl = document.getElementById('connection-status');
 
-if (connectBtn) {
-    connectBtn.addEventListener('click', async () => {
-        const dbPath = dbPathInput.value.trim();
-        
-        if (!dbPath) {
-            showStatus('Please enter a database path', 'error');
-            return;
-        }
-        
-        const result = await apiRequest('api/connect', 'POST', { db_path: dbPath });
-        
-        if (result.success) {
-            showStatus('Connected successfully', 'success');
-            connectBtn.disabled = true;
-            disconnectBtn.disabled = false;
-            document.getElementById('execute-btn').disabled = false;
-            loadTables();
-        } else {
-            showStatus(result.error || 'Connection failed', 'error');
-        }
-    });
+async function loadTableSchema(table_name) {
+    const result = await apiRequest(`api/table/${encodeURIComponent(table_name)}/schema`, 'GET');
+    if (result.success && result.schema != null) {
+        return result.schema;
+    }
+    return null;
 }
 
-if (disconnectBtn) {
-    disconnectBtn.addEventListener('click', async () => {
-        await apiRequest('api/disconnect', 'POST');
-        showStatus('Disconnected', 'success');
-        if (connectBtn) connectBtn.disabled = false;
-        disconnectBtn.disabled = true;
-        document.getElementById('execute-btn').disabled = true;
-        document.getElementById('tables-list').innerHTML = '<p class="empty-message">Connect to a database to see tables</p>';
-        document.getElementById('results-container').innerHTML = '<p class="empty-message">Execute a query to see results</p>';
-    });
+function displayTableSchema(schemaString, tableName) {
+    const container = document.getElementById('table-schema-container');
+    if (!container) return;
+
+    if (!schemaString || typeof schemaString !== 'string') {
+        container.innerHTML = '<p class="empty-message">No schema information</p>';
+        return;
+    }
+
+    const trimmed = schemaString.trim();
+    if (!trimmed) {
+        container.innerHTML = '<p class="empty-message">No schema information</p>';
+        return;
+    }
+
+    let html = `<p class="schema-table-name"><strong>${escapeHtml(tableName)}</strong></p>`;
+    html += '<pre class="schema-sql"><code>' + escapeHtml(trimmed) + '</code></pre>';
+    container.innerHTML = html;
 }
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Click on table name: load and display schema
+document.getElementById('tables-list').addEventListener('click', async (e) => {
+    const item = e.target.closest('.table-item');
+    if (!item) return;
+    const tableName = item.dataset.tableName;
+    if (!tableName) return;
+
+    const container = document.getElementById('table-schema-container');
+    if (container) {
+        container.innerHTML = '<p class="empty-message"><i class="fas fa-spinner fa-spin"></i> Loading schema...</p>';
+    }
+
+    document.getElementById('schema-tab').click();
+
+    const schema = await loadTableSchema(tableName);
+    if (schema === null && container) {
+        container.innerHTML = '<p class="error-message">Failed to load schema</p>';
+    } else {
+        displayTableSchema(schema, tableName);
+    }
+});
 
 // Execute query
 document.getElementById('execute-btn').addEventListener('click', async () => {
@@ -129,16 +147,6 @@ function showStatus(message, type) {
 window.addEventListener('load', async () => {
     const status = await apiRequest('api/status');
     if (status.connected) {
-        // If connection panel exists, update it
-        if (dbPathInput) {
-            dbPathInput.value = status.db_path || '';
-        }
-        if (connectBtn) {
-            connectBtn.disabled = true;
-        }
-        if (disconnectBtn) {
-            disconnectBtn.disabled = false;
-        }
         document.getElementById('execute-btn').disabled = false;
     }
 });

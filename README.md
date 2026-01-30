@@ -33,6 +33,12 @@ dashboard.bind(app)
 app.run()
 ```
 
+## Screenshots
+
+![SQLite Opus Dashboard](screenshots/sqlite-opus.png)
+
+*Dashboard: tables list, table schema viewer, and SQL query editor with results.*
+
 ## Configuration
 
 You can customize the dashboard configuration:
@@ -66,19 +72,6 @@ dashboard.bind(
 - **Database Connection Management**: Connect to and disconnect from SQLite databases
 - **Table Schema Viewer**: View table structures and schemas
 - **Query Results Display**: View query results in a formatted table
-- **RESTful API**: All features accessible via API endpoints
-
-## API Endpoints
-
-Once the dashboard is bound to your Flask app, the following endpoints are available:
-
-- `GET /sqlite-opus/` - Main dashboard page
-- `POST /sqlite-opus/api/connect` - Connect to a SQLite database
-- `POST /sqlite-opus/api/disconnect` - Disconnect from current database
-- `GET /sqlite-opus/api/status` - Get connection status
-- `GET /sqlite-opus/api/tables` - Get list of all tables
-- `GET /sqlite-opus/api/table/<table_name>/schema` - Get table schema
-- `POST /sqlite-opus/api/query` - Execute SQL query
 
 ## Development
 
