@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SQLite Opus - Database Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for(blueprint_name ~ '.static', filename='style.css') }}">
+    <!-- Font Awesome 6.4.0 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
     <div class="container">
@@ -14,56 +16,66 @@
         </header>
 
         <div class="main-content">
-            <!-- Connection Panel -->
-            <section class="panel connection-panel">
-                <h2>Database Connection</h2>
-                <div class="connection-form">
-                    <input 
-                        type="text" 
-                        id="db-path" 
-                        placeholder="Path to SQLite database file"
-                        value=""
-                    >
-                    <div class="button-group">
-                        <button id="connect-btn" class="btn btn-primary">Connect</button>
-                        <button id="disconnect-btn" class="btn btn-secondary" disabled>Disconnect</button>
+            <!-- Left sidebar: Tables Panel -->
+            <aside class="sidebar">
+                <section class="panel tables-panel">
+                    <h2>Tables</h2>
+                    <div id="tables-list" class="tables-list">
+                        {% if tables %}
+                        {% for table in tables %}
+                        <div class="table-item"><i class="fas fa-table"></i> {{ table }}</div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="empty-message">Connect to a database to see tables</p>
+                        {% endif %}
                     </div>
-                    <div id="connection-status" class="status-message"></div>
-                </div>
-            </section>
+                </section>
+            </aside>
 
-            <!-- Tables Panel -->
-            <section class="panel tables-panel">
-                <h2>Tables</h2>
-                <div id="tables-list" class="tables-list">
-                    <p class="empty-message">Connect to a database to see tables</p>
-                </div>
-            </section>
+            <!-- Right: Connection, Query, Results -->
+            <div class="content-right">
+                <!-- Connection Panel -->
+                <section class="panel connection-panel">
+                    <h2>Database Connection</h2>
+                    {% if has_preconfigured_db %}
+                    <div class="connection-info">
+                        <p><strong>Connected to:</strong> <code>{{ db_path }}</code></p>
+                        <p class="info-text">Database path is pre-configured. Connection is automatic.</p>
+                    </div>
+                    {% else %}
+                    <div class="connection-message connection-message--warning">
+                        <p>Database path is not configured. Set <code>dashboard.config.db_path</code> in your application before calling <code>dashboard.bind(app)</code>.</p>
+                    </div>
+                    {% endif %}
+                </section>
 
-            <!-- Query Panel -->
-            <section class="panel query-panel">
-                <h2>Query Editor</h2>
-                <textarea 
-                    id="query-editor" 
-                    placeholder="Enter your SQL query here..."
-                    rows="10"
-                ></textarea>
-                <div class="button-group">
-                    <button id="execute-btn" class="btn btn-primary" disabled>Execute Query</button>
-                    <button id="clear-btn" class="btn btn-secondary">Clear</button>
-                </div>
-            </section>
+                {% if has_preconfigured_db %}
+                    <!-- Query Panel -->
+                    <section class="panel query-panel">
+                        <h2>Query Editor</h2>
+                        <textarea 
+                            id="query-editor" 
+                            placeholder="Enter your SQL query here..."
+                            rows="10"
+                        ></textarea>
+                        <div class="button-group">
+                            <button id="execute-btn" class="btn btn-primary" disabled>Execute Query</button>
+                            <button id="clear-btn" class="btn btn-secondary">Clear</button>
+                        </div>
+                    </section>
 
-            <!-- Results Panel -->
-            <section class="panel results-panel">
-                <h2>Query Results</h2>
-                <div id="results-container" class="results-container">
-                    <p class="empty-message">Execute a query to see results</p>
-                </div>
-            </section>
+                    <!-- Results Panel -->
+                    <section class="panel results-panel">
+                        <h2>Query Results</h2>
+                        <div id="results-container" class="results-container">
+                            <p class="empty-message">Execute a query to see results</p>
+                        </div>
+                    </section>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for(blueprint_name ~ '.static', filename='app.js') }}"></script>
 </body>
 </html>

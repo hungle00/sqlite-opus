@@ -17,50 +17,45 @@ async function apiRequest(url, method = 'GET', data = null) {
     return response.json();
 }
 
-// Connection management
-document.getElementById('connect-btn').addEventListener('click', async () => {
-    const dbPath = document.getElementById('db-path').value.trim();
-    
-    if (!dbPath) {
-        showStatus('Please enter a database path', 'error');
-        return;
-    }
-    
-    const result = await apiRequest('/api/connect', 'POST', { db_path: dbPath });
-    
-    if (result.success) {
-        showStatus('Connected successfully', 'success');
-        document.getElementById('connect-btn').disabled = true;
-        document.getElementById('disconnect-btn').disabled = false;
-        document.getElementById('execute-btn').disabled = false;
-        loadTables();
-    } else {
-        showStatus(result.error || 'Connection failed', 'error');
-    }
-});
+// Connection management (only if connection panel exists)
+const connectBtn = document.getElementById('connect-btn');
+const disconnectBtn = document.getElementById('disconnect-btn');
+const dbPathInput = document.getElementById('db-path');
+const statusEl = document.getElementById('connection-status');
 
-document.getElementById('disconnect-btn').addEventListener('click', async () => {
-    await apiRequest('/api/disconnect', 'POST');
-    showStatus('Disconnected', 'success');
-    document.getElementById('connect-btn').disabled = false;
-    document.getElementById('disconnect-btn').disabled = true;
-    document.getElementById('execute-btn').disabled = true;
-    document.getElementById('tables-list').innerHTML = '<p class="empty-message">Connect to a database to see tables</p>';
-    document.getElementById('results-container').innerHTML = '<p class="empty-message">Execute a query to see results</p>';
-});
+if (connectBtn) {
+    connectBtn.addEventListener('click', async () => {
+        const dbPath = dbPathInput.value.trim();
+        
+        if (!dbPath) {
+            showStatus('Please enter a database path', 'error');
+            return;
+        }
+        
+        const result = await apiRequest('api/connect', 'POST', { db_path: dbPath });
+        
+        if (result.success) {
+            showStatus('Connected successfully', 'success');
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            document.getElementById('execute-btn').disabled = false;
+            loadTables();
+        } else {
+            showStatus(result.error || 'Connection failed', 'error');
+        }
+    });
+}
 
-// Load tables
-async function loadTables() {
-    const result = await apiRequest('/api/tables');
-    
-    if (result.success && result.tables.length > 0) {
-        const tablesList = document.getElementById('tables-list');
-        tablesList.innerHTML = result.tables.map(table => 
-            `<div class="table-item">${table}</div>`
-        ).join('');
-    } else {
-        document.getElementById('tables-list').innerHTML = '<p class="empty-message">No tables found</p>';
-    }
+if (disconnectBtn) {
+    disconnectBtn.addEventListener('click', async () => {
+        await apiRequest('api/disconnect', 'POST');
+        showStatus('Disconnected', 'success');
+        if (connectBtn) connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        document.getElementById('execute-btn').disabled = true;
+        document.getElementById('tables-list').innerHTML = '<p class="empty-message">Connect to a database to see tables</p>';
+        document.getElementById('results-container').innerHTML = '<p class="empty-message">Execute a query to see results</p>';
+    });
 }
 
 // Execute query
@@ -69,10 +64,14 @@ document.getElementById('execute-btn').addEventListener('click', async () => {
     
     if (!query) {
         showStatus('Please enter a query', 'error');
+        const container = document.getElementById('results-container');
+        if (container) {
+            container.innerHTML = '<p class="empty-message">Please enter a query above.</p>';
+        }
         return;
     }
     
-    const result = await apiRequest('/api/query', 'POST', { query: query });
+    const result = await apiRequest('api/query', 'POST', { query: query });
     displayResults(result);
 });
 
@@ -116,23 +115,30 @@ function displayResults(result) {
 
 // Show status message
 function showStatus(message, type) {
-    const statusEl = document.getElementById('connection-status');
-    statusEl.textContent = message;
-    statusEl.className = `status-message ${type}`;
-    
-    setTimeout(() => {
-        statusEl.className = 'status-message';
-    }, 5000);
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.className = `status-message ${type}`;
+        
+        setTimeout(() => {
+            statusEl.className = 'status-message';
+        }, 5000);
+    }
 }
 
 // Check connection status on load
 window.addEventListener('load', async () => {
-    const status = await apiRequest('/api/status');
+    const status = await apiRequest('api/status');
     if (status.connected) {
-        document.getElementById('db-path').value = status.db_path || '';
-        document.getElementById('connect-btn').disabled = true;
-        document.getElementById('disconnect-btn').disabled = false;
+        // If connection panel exists, update it
+        if (dbPathInput) {
+            dbPathInput.value = status.db_path || '';
+        }
+        if (connectBtn) {
+            connectBtn.disabled = true;
+        }
+        if (disconnectBtn) {
+            disconnectBtn.disabled = false;
+        }
         document.getElementById('execute-btn').disabled = false;
-        loadTables();
     }
 });

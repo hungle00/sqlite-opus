@@ -39,8 +39,26 @@ header h1 {
 }
 
 .main-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.sidebar {
+    flex-shrink: 0;
+    width: 260px;
+}
+
+.sidebar .panel {
+    position: sticky;
+    top: 20px;
+}
+
+.content-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
 }
 
@@ -59,13 +77,39 @@ header h1 {
     padding-bottom: 10px;
 }
 
-.connection-form input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
+.connection-info p,
+.connection-message p {
+    margin-bottom: 8px;
+}
+
+.connection-info p:last-child,
+.connection-message p:last-child {
+    margin-bottom: 0;
+}
+
+.connection-info code,
+.connection-message code {
+    background: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.connection-message {
+    padding: 12px;
     border-radius: 4px;
     font-size: 14px;
+}
+
+.connection-message--warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.info-text {
+    color: #7f8c8d;
+    font-size: 0.9em;
 }
 
 .button-group {
@@ -128,14 +172,13 @@ header h1 {
 }
 
 .tables-list {
-    max-height: 300px;
+    max-height: calc(100vh - 200px);
+    min-height: 200px;
     overflow-y: auto;
 }
 
 .tables-list .table-item {
     padding: 10px;
-    margin-bottom: 5px;
-    background-color: #f8f9fa;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -143,6 +186,10 @@ header h1 {
 
 .tables-list .table-item:hover {
     background-color: #e9ecef;
+}
+
+.table-item i.fa-table {
+    margin-right: 8px;
 }
 
 .empty-message {
@@ -165,13 +212,16 @@ header h1 {
 
 .results-container {
     max-height: 500px;
+    max-width: 100%;
     overflow: auto;
 }
 
 .results-table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: fixed;
 }
 
 .results-table th,
@@ -179,6 +229,10 @@ header h1 {
     padding: 8px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
 }
 
 .results-table th {
@@ -203,6 +257,18 @@ header h1 {
 /* Responsive */
 @media (max-width: 768px) {
     .main-content {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+    }
+
+    .sidebar .panel {
+        position: static;
+    }
+
+    .tables-list {
+        max-height: 250px;
     }
 }

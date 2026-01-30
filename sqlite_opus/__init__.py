@@ -65,6 +65,18 @@ def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_result
     if not hasattr(app, "sqlite_opus_db_manager"):
         app.sqlite_opus_db_manager = DatabaseManager()
     
+    # Auto-connect to database if db_path is configured
+    if config.db_path:
+        db_manager = app.sqlite_opus_db_manager
+        success = db_manager.connect(config.db_path)
+        if not success:
+            import warnings
+            warnings.warn(
+                f"Failed to auto-connect to database at '{config.db_path}'. "
+                "Please check the path and try connecting manually.",
+                UserWarning
+            )
+    
     # Enable CORS if requested
     if enable_cors:
         try:

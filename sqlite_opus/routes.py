@@ -18,7 +18,18 @@ def register_routes(bp: Blueprint, app: Flask):
     @bp.route("/")
     def index():
         """Render main dashboard page."""
-        return render_template("index.html")
+        # Pass config info to template (blueprint_name for correct static file URLs)
+        has_preconfigured_db = config.db_path is not None
+        tables = []
+        if has_preconfigured_db and app.sqlite_opus_db_manager.is_connected():
+            tables = app.sqlite_opus_db_manager.get_tables()
+        return render_template(
+            "index.html",
+            has_preconfigured_db=has_preconfigured_db,
+            db_path=config.db_path if has_preconfigured_db else None,
+            blueprint_name=config.blueprint_name,
+            tables=tables,
+        )
     
     @bp.route("/api/connect", methods=["POST"])
     def connect_database():

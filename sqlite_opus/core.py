@@ -15,6 +15,7 @@ class Config:
         self.blueprint_name: str = "sqlite_opus"
         self.max_query_results: int = 1000
         self.enable_cors: bool = True
+        self.db_path: Optional[str] = None  # Pre-configured database path
     
     def init_from(self, **kwargs):
         """
@@ -25,6 +26,7 @@ class Config:
                 - url_prefix: URL prefix for dashboard (default: "sqlite-opus")
                 - max_query_results: Maximum number of query results (default: 1000)
                 - enable_cors: Enable CORS support (default: True)
+                - db_path: Path to SQLite database file (default: None)
         """
         if "url_prefix" in kwargs:
             self.url_prefix = kwargs["url_prefix"]
@@ -32,6 +34,8 @@ class Config:
             self.max_query_results = kwargs["max_query_results"]
         if "enable_cors" in kwargs:
             self.enable_cors = kwargs["enable_cors"]
+        if "db_path" in kwargs:
+            self.db_path = kwargs["db_path"]
 
 
 def get_package_path() -> str:
