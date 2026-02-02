@@ -300,6 +300,23 @@ body {
     margin-top: 0;
 }
 
+.table-columns-panel,
+.table-indexes-panel {
+    margin-top: 1.5rem;
+}
+
+.table-columns-container,
+.table-indexes-container {
+    max-height: 280px;
+    overflow: auto;
+}
+
+.table-columns-name,
+.table-indexes-name {
+    margin-bottom: 10px;
+    color: var(--text);
+}
+
 .table-schema-container {
     max-height: 320px;
     overflow: auto;

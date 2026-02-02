@@ -106,7 +106,7 @@ class DatabaseManager:
             try:
                 cursor = self.connection.cursor()
                 cursor.execute(
-                    "SELECT sql FROM sqlite_master WHERE tbl_name = ? AND type IN ('table', 'view')", 
+                    "SELECT sql FROM sqlite_master WHERE tbl_name = ? AND type IN ('table', 'view')",
                     (table_name,)
                 )
                 result = cursor.fetchone()
@@ -123,28 +123,81 @@ class DatabaseManager:
                     "error": str(e)
                 }
 
-        def get_all_columns(self, table_name: str) -> List[str]:
-            with self._lock:
-                try:
-                    cursor = self.connection.cursor()
-                    cursor.execute(
-                        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                    )
-                    return [row[0] for row in cursor.fetchall()]
-                except Exception:
-                    return []
+    def _safe_table_identifier(self, table_name: str) -> Optional[str]:
+        """Return table name if it is a safe SQL identifier (alphanumeric + underscore), else None."""
+        if not table_name or not table_name.strip():
+            return None
+        s = table_name.strip()
+        if not s.replace("_", "").isalnum():
+            return None
+        return s
 
-        def get_all_indexes(self, table_name: str) -> List[str]:
-            with self._lock:
+    def get_all_columns(self, table_name: str) -> List[Dict[str, Any]]:
+        """Return list of column info dicts for a table. Empty list on error."""
+        if not self.connection:
+            return []
+        with self._lock:
+            try:
+                cursor = self.connection.cursor()
+                # PRAGMA table_info(?) does not support bound params (SQLite limitation).
+                # Try table-valued function first (SQLite 3.16+), then fallback to PRAGMA with safe identifier.
                 try:
-                    cursor = self.connection.cursor()
-                    cursor.execute(
-                        "SELECT name FROM sqlite_master WHERE type='index' ORDER BY name"
-                    )
-                    return [row[0] for row in cursor.fetchall()]
-                except Exception:
-                    return []
-    
+                    cursor.execute("SELECT * FROM pragma_table_info(?)", (table_name,))
+                except sqlite3.OperationalError:
+                    safe_name = self._safe_table_identifier(table_name)
+                    if safe_name is None:
+                        return []
+                    cursor.execute(f'PRAGMA table_info("{safe_name}")')
+                columns = []
+                for row in cursor.fetchall():
+                    columns.append({
+                        "name": row[1],
+                        "type": row[2],
+                        "notnull": bool(row[3]),
+                        "dflt_value": row[4],
+                        "pk": bool(row[5]),
+                    })
+                return columns
+            except Exception:
+                return []
+
+    def get_indexes(self, table_name: str) -> List[Dict[str, Any]]:
+        """Return list of index info dicts for a table. Empty list on error."""
+        if not self.connection:
+            return []
+        with self._lock:
+            try:
+                cursor = self.connection.cursor()
+                try:
+                    cursor.execute("SELECT * FROM pragma_index_list(?)", (table_name,))
+                except sqlite3.OperationalError:
+                    safe_name = self._safe_table_identifier(table_name)
+                    if safe_name is None:
+                        return []
+                    cursor.execute(f'PRAGMA index_list("{safe_name}")')
+                indexes = []
+                for row in cursor.fetchall():
+                    indexes.append({
+                        "name": row[1],
+                        "unique": bool(row[2]),
+                        "origin": row[3] or "",
+                    })
+                return indexes
+            except Exception:
+                return []
+
+    def get_table_info(self, table_name: str) -> Dict[str, Any]:
+        """Return schema, columns, and indexes for a table as a single hash."""
+        schema_result = self.get_table_schema(table_name)
+        if not schema_result.get("success"):
+            return schema_result
+        return {
+            "success": True,
+            "schema": schema_result["schema"],
+            "columns": self.get_all_columns(table_name),
+            "indexes": self.get_indexes(table_name),
+        }
+
     def is_connected(self) -> bool:
         """Check if database is connected."""
         return self.connection is not None

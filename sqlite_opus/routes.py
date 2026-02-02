@@ -24,7 +24,7 @@ def register_routes(bp: Blueprint, app: Flask):
         if has_preconfigured_db and app.sqlite_opus_db_manager.is_connected():
             tables = app.sqlite_opus_db_manager.get_tables()
         return render_template(
-            "index.html",
+            "sqlite_opus/index.html",
             has_preconfigured_db=has_preconfigured_db,
             db_path=config.db_path if has_preconfigured_db else None,
             blueprint_name=config.blueprint_name,
@@ -81,15 +81,17 @@ def register_routes(bp: Blueprint, app: Flask):
         tables = db_manager.get_tables()
         return jsonify({"success": True, "tables": tables})
     
-    @bp.route("/api/table/<table_name>/schema", methods=["GET"])
-    def get_table_schema(table_name):
-        """Get schema for a specific table."""
+    @bp.route("/api/table/<table_name>", methods=["GET"])
+    def get_table_info(table_name):
+        """Get schema, columns, and indexes for a specific table (single hash)."""
         db_manager = app.sqlite_opus_db_manager
         if not db_manager.is_connected():
             return jsonify({"success": False, "error": "Not connected"}), 400
         
-        schema = db_manager.get_table_schema(table_name)
-        return jsonify(schema)
+        info = db_manager.get_table_info(table_name)
+        if not info.get("success"):
+            return jsonify(info), 404
+        return jsonify(info)
     
     @bp.route("/api/query", methods=["POST"])
     def execute_query():
