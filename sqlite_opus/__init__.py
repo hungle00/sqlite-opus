@@ -16,7 +16,7 @@ from flask import Blueprint
 from sqlite_opus.core import Config, get_templates_path, get_static_path
 from sqlite_opus.database import DatabaseManager
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Module-level configuration
 config = Config()

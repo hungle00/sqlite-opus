@@ -11,7 +11,7 @@ pip install sqlite-opus
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/sqlite-opus.git
+git clone https://github.com/hungle00/sqlite-opus.git
 cd sqlite-opus
 pip install -e .
 ```
@@ -84,19 +84,6 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install in development mode with dev dependencies
 pip install -e ".[dev]"
-```
-
-### Running Tests
-
-```bash
-pytest
-```
-
-### Code Formatting
-
-```bash
-black sqlite_opus/
-flake8 sqlite_opus/
 ```
 
 ## Requirements
