@@ -31,7 +31,7 @@ blueprint = Blueprint(
 )
 
 
-def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_results: int = 1000):
+def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_results: int = 1000, query_results_per_page: int = None):
     """
     Bind SQLite Opus dashboard to a Flask application.
     
@@ -44,7 +44,8 @@ def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_result
         url_prefix: URL prefix for dashboard routes (default: "sqlite-opus")
         enable_cors: Enable CORS support (default: True)
         max_query_results: Maximum number of query results to return (default: 1000)
-    
+        query_results_per_page: Rows per page for paginated SELECT results (default: 50)
+
     Example:
         >>> from flask import Flask
         >>> import sqlite_opus as dashboard
@@ -60,7 +61,9 @@ def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_result
         config.url_prefix = url_prefix
     config.enable_cors = enable_cors
     config.max_query_results = max_query_results
-    
+    if query_results_per_page is not None:
+        config.query_results_per_page = query_results_per_page
+
     # Initialize database manager and attach to app
     if not hasattr(app, "sqlite_opus_db_manager"):
         app.sqlite_opus_db_manager = DatabaseManager()

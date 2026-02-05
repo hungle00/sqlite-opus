@@ -1,18 +1,33 @@
 """SQLite database connection and query management."""
 
+import re
 import sqlite3
 import threading
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 
+def _strip_limit_offset(query: str) -> str:
+    """Remove trailing LIMIT and OFFSET clauses from a SQL query (case-insensitive)."""
+    q = query.strip().rstrip(";").strip()
+    # Remove LIMIT n and OFFSET n in either order (from the end)
+    for _ in range(2):  # at most two clauses
+        # Match OFFSET <digits> or LIMIT <digits> at end
+        m = re.search(r"\s+(?:OFFSET\s+\d+|LIMIT\s+\d+)\s*$", q, re.IGNORECASE)
+        if m:
+            q = q[: m.start()].rstrip()
+        else:
+            break
+    return q
+
+
 class DatabaseManager:
     """Manages SQLite database connections and queries.
-    
+
     Uses check_same_thread=False so the connection can be used from any
     Flask request thread. A lock is used for thread-safe access.
     """
-    
+
     def __init__(self):
         """Initialize database manager."""
         self.current_db_path: Optional[str] = None
@@ -83,7 +98,70 @@ class DatabaseManager:
                     "results": [],
                     "columns": []
                 }
-    
+
+    def execute_query_paginated(
+        self,
+        query: str,
+        page: int = 1,
+        per_page: int = 50,
+        max_results: int = 10000,
+    ) -> Dict[str, Any]:
+        """Execute a SELECT query with pagination. Returns one page of results and pagination metadata."""
+        if not self.connection:
+            return {
+                "success": False,
+                "error": "No database connection",
+                "results": [],
+                "columns": [],
+                "pagination": None,
+            }
+        q = query.strip().rstrip(";").strip()
+        if not q.upper().startswith("SELECT"):
+            return self.execute_query(query)
+
+        page = max(1, page)
+        per_page = max(1, min(per_page, max_results))
+
+        with self._lock:
+            try:
+                cursor = self.connection.cursor()
+                base_query = _strip_limit_offset(q)
+                count_query = f"SELECT COUNT(*) FROM ({base_query}) AS _cnt"
+                cursor.execute(count_query)
+                total_count = cursor.fetchone()[0]
+
+                offset = (page - 1) * per_page
+                limit = per_page
+                total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
+
+                data_query = f"{base_query} LIMIT {limit} OFFSET {offset}"
+                cursor.execute(data_query)
+                results = [dict(row) for row in cursor.fetchall()]
+                columns = [d[0] for d in (cursor.description or [])]
+
+                pagination = {
+                    "page": page,
+                    "per_page": per_page,
+                    "total_count": total_count,
+                    "total_pages": total_pages,
+                }
+
+                return {
+                    "success": True,
+                    "results": results,
+                    "columns": columns,
+                    "rowcount": len(results),
+                    "pagination": pagination,
+                }
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "results": [],
+                    "columns": [],
+                    "pagination": None,
+                }
+
     def get_tables(self) -> List[str]:
         if not self.connection:
             return []

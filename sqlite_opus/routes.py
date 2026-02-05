@@ -95,36 +95,85 @@ def register_routes(bp: Blueprint, app: Flask):
             return jsonify(info), 404
         return jsonify(info)
     
-    @bp.route("/api/query", methods=["POST"])
-    def execute_query():
-        """Execute a SQL query."""
+    def get_query_result(query, page=None, per_page=None):
+        """Run query and return result dict for the partial template."""
         db_manager = app.sqlite_opus_db_manager
         if not db_manager.is_connected():
-            return jsonify({"success": False, "error": "Not connected"}), 400
-        
-        data = request.get_json()
-        query = data.get("query")
-        
+            return {"success": False, "error": "Not connected"}
         if not query:
-            return jsonify({"success": False, "error": "Query required"}), 400
-        
-        # Reject DML unless config.allow_dml is True
+            return {"success": False, "error": "Query required"}
         if contains_dml(query) and not config.allow_dml:
-            return jsonify({
+            return {
                 "success": False,
                 "error": "DML queries (INSERT/UPDATE/DELETE/CREATE/TRUNCATE/REPLACE) are not allowed. Set config.allow_dml = True to enable."
-            }), 403
-        
-        # Apply max results limit from config
+            }
+        use_pagination = (
+            query.strip().upper().startswith("SELECT")
+            and page is not None
+            and isinstance(page, int)
+            and page >= 1
+        )
+        if use_pagination:
+            if per_page is None or not isinstance(per_page, int) or per_page < 1:
+                per_page = getattr(config, "query_results_per_page", 50)
+            per_page = min(per_page, config.max_query_results)
+            return db_manager.execute_query_paginated(
+                query,
+                page=page,
+                per_page=per_page,
+                max_results=config.max_query_results,
+            )
         if query.strip().upper().startswith("SELECT"):
-            # Add LIMIT clause if not present
             query_upper = query.upper()
             if "LIMIT" not in query_upper:
-                # Simple check - in production, you'd want a proper SQL parser
                 query = f"{query.rstrip(';')} LIMIT {config.max_query_results}"
-        
-        result = db_manager.execute_query(query)
-        return jsonify(result)
+        return db_manager.execute_query(query)
+
+    @bp.route("/api/query/", methods=["POST"])
+    def execute_query():
+        """Execute a SQL query and return HTML partial (results table + pagination)."""
+        data = request.get_json() or {}
+        query = (data.get("query") or "").strip()
+        if not query:
+            return render_template(
+                "sqlite_opus/partials/query_results.html",
+                success=False,
+                error="Query required",
+                results=[],
+                columns=[],
+                pagination=None,
+            ), 400
+        page = 1
+        try:
+            p = data.get("page")
+            if p is not None:
+                page = int(p)
+        except (TypeError, ValueError):
+            pass
+        per_page = getattr(config, "query_results_per_page", 50)
+        try:
+            pp = data.get("per_page")
+            if pp is not None:
+                per_page = int(pp)
+        except (TypeError, ValueError):
+            pass
+        result = get_query_result(query, page=page, per_page=per_page)
+        pagination = result.get("pagination")
+        page_numbers = []
+        if pagination and pagination.get("total_pages", 0) > 1:
+            pn = pagination.get("page", 1)
+            total_pages = pagination.get("total_pages", 0)
+            show = sorted({1, total_pages} | set(range(max(1, pn - 2), min(total_pages, pn + 2) + 1)))
+            page_numbers = show
+        return render_template(
+            "sqlite_opus/partials/query_results.html",
+            success=result.get("success"),
+            error=result.get("error"),
+            results=result.get("results", []),
+            columns=result.get("columns", []),
+            pagination=pagination,
+            page_numbers=page_numbers,
+        )
 
 def basic_auth_required(f):
     """Require HTTP Basic Auth if config.auth_user and config.auth_password are set."""

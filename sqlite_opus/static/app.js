@@ -104,12 +104,19 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Currently selected table (for export)
+let selectedTableName = null;
+
 // Click on table name: load and display schema, columns, indexes
 document.getElementById('tables-list').addEventListener('click', async (e) => {
     const item = e.target.closest('.table-item');
     if (!item) return;
     const tableName = item.dataset.tableName;
     if (!tableName) return;
+
+    selectedTableName = tableName;
+    const exportBtn = document.getElementById('export-csv-btn');
+    if (exportBtn) exportBtn.disabled = false;
 
     const loadingMsg = '<p class="empty-message"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
     const schemaContainer = document.getElementById('table-schema-container');
@@ -134,21 +141,44 @@ document.getElementById('tables-list').addEventListener('click', async (e) => {
     }
 });
 
-// Execute query
+// Query results via Flask partial
+let lastQuery = '';
+let lastPerPage = 50;
+
+async function fetchQueryPartial(query, page, perPage) {
+    const res = await fetch('api/query/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query, page: page || 1, per_page: perPage || 50 }),
+    });
+    const html = await res.text();
+    return html;
+}
+
+function renderQueryResults(html) {
+    const area = document.getElementById('query-results-area');
+    if (area) area.innerHTML = html;
+}
+
+// Execute query (page 1) – fetch HTML partial and inject
 document.getElementById('execute-btn').addEventListener('click', async () => {
     const query = document.getElementById('query-editor').value.trim();
-    
     if (!query) {
         showStatus('Please enter a query', 'error');
-        const container = document.getElementById('results-container');
-        if (container) {
-            container.innerHTML = '<p class="empty-message">Please enter a query above.</p>';
+        const area = document.getElementById('query-results-area');
+        if (area) {
+            area.innerHTML = '<div id="results-container" class="results-container"><p class="empty-message">Please enter a query above.</p></div><div id="pagination-bar" class="pagination-bar" style="display: none;"></div>';
         }
         return;
     }
-    
-    const result = await apiRequest('api/query', 'POST', { query: query });
-    displayResults(result);
+    lastQuery = query;
+    lastPerPage = 50;
+    try {
+        const html = await fetchQueryPartial(query, 1, lastPerPage);
+        renderQueryResults(html);
+    } catch (err) {
+        showStatus('Request failed: ' + err.message, 'error');
+    }
 });
 
 // Clear query
@@ -156,74 +186,34 @@ document.getElementById('clear-btn').addEventListener('click', () => {
     document.getElementById('query-editor').value = '';
 });
 
-// Display query results
-function displayResults(result) {
-    const container = document.getElementById('results-container');
-    const exportBtn = document.getElementById('export-csv-btn');
-    
-    if (!result.success) {
-        container.innerHTML = `<div class="error-message">Error: ${result.error}</div>`;
-        if (exportBtn) exportBtn.disabled = true;
-        return;
+// Pagination: delegate on query-results-area so it works after partial inject
+document.getElementById('query-results-area').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.pagination-btn');
+    if (!btn || !lastQuery) return;
+    const page = parseInt(btn.dataset.page, 10);
+    if (isNaN(page)) return;
+    try {
+        const html = await fetchQueryPartial(lastQuery, page, lastPerPage);
+        renderQueryResults(html);
+    } catch (err) {
+        showStatus('Request failed: ' + err.message, 'error');
     }
-    
-    if (result.results.length === 0) {
-        container.innerHTML = '<p class="empty-message">No results returned</p>';
-        if (exportBtn) exportBtn.disabled = true;
-        return;
-    }
-    
-    // Create table
-    let html = '<table class="results-table"><thead><tr>';
-    result.columns.forEach(col => {
-        html += `<th>${col}</th>`;
-    });
-    html += '</tr></thead><tbody>';
-    
-    result.results.forEach(row => {
-        html += '<tr>';
-        result.columns.forEach(col => {
-            html += `<td>${row[col] ?? ''}</td>`;
-        });
-        html += '</tr>';
-    });
-    
-    html += '</tbody></table>';
-    container.innerHTML = html;
-    if (exportBtn) exportBtn.disabled = false;
-}
+});
 
-// Export results table to CSV
-function exportResultsToCsv() {
-    const container = document.getElementById('results-container');
-    if (!container) return;
-    const table = container.querySelector('table.results-table');
-    if (!table) return;
-    
-    const rows = table.querySelectorAll('tr');
-    const lines = [];
-    rows.forEach(tr => {
-        const cells = tr.querySelectorAll('th, td');
-        const values = Array.from(cells).map(cell => {
-            const text = (cell.textContent || '').trim();
-            if (/[",\n\r]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
-            return text;
-        });
-        lines.push(values.join(','));
-    });
-    const csv = lines.join('\r\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'query-results.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+// Export selected table as CSV via API
+async function exportTableToCsv() {
+    if (!selectedTableName) {
+        if (typeof showStatus === 'function') showStatus('Select a table first', 'error');
+        return;
+    }
+    // const exportBtn = document.getElementById('export-csv-btn');
+    // if (exportBtn) exportBtn.disabled = true;
+    // call api/table/${encodeURIComponent(selectedTableName)}/export
 }
 
 const exportCsvBtn = document.getElementById('export-csv-btn');
 if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', exportResultsToCsv);
+    exportCsvBtn.addEventListener('click', exportTableToCsv);
 }
 
 // Show status message

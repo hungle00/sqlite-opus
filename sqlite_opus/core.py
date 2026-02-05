@@ -19,7 +19,8 @@ class Config:
         self.auth_user: Optional[str] = None  # Basic Auth username (optional)
         self.auth_password: Optional[str] = None  # Basic Auth password (optional)
         self.allow_dml: bool = False  # If True, allow DML (INSERT/UPDATE/DELETE/...) in query API
-    
+        self.query_results_per_page: int = 5  # Rows per page when pagination is enabled
+
     def init_from(self, **kwargs):
         """
         Initialize configuration from keyword arguments.
@@ -32,7 +33,8 @@ class Config:
                 - db_path: Path to SQLite database file (default: None)
                 - auth_user: Basic Auth username for index route (default: None)
                 - auth_password: Basic Auth password for index route (default: None)
-                - allow_dml: Allow DML queries in /api/query (default: False)
+                - allow_dml: Allow DML queries in /api/query/ (default: False)
+        - query_results_per_page: Rows per page for query results (default: 50)
         """
         if "url_prefix" in kwargs:
             self.url_prefix = kwargs["url_prefix"]
@@ -48,6 +50,8 @@ class Config:
             self.auth_password = kwargs["auth_password"]
         if "allow_dml" in kwargs:
             self.allow_dml = kwargs["allow_dml"]
+        if "query_results_per_page" in kwargs:
+            self.query_results_per_page = kwargs["query_results_per_page"]
 
 
 def get_package_path() -> str:

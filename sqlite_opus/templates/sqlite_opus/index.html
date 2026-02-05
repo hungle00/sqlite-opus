@@ -117,12 +117,15 @@
                             <section class="panel results-panel mt-2">
                                 <div class="panel-header panel-header--with-actions">
                                     <h2>Query Results</h2>
-                                    <button type="button" id="export-csv-btn" class="btn btn-outline-primary btn-sm" disabled title="Export current results to CSV">
+                                    <button type="button" id="export-csv-btn" class="btn btn-outline-primary btn-sm" disabled title="Export selected table to CSV">
                                         <i class="fas fa-file-csv me-1"></i> Export CSV
                                     </button>
                                 </div>
-                                <div id="results-container" class="results-container">
-                                    <p class="empty-message">Execute a query to see results</p>
+                                <div id="query-results-area">
+                                    <div id="results-container" class="results-container">
+                                        <p class="empty-message">Execute a query to see results</p>
+                                    </div>
+                                    <div id="pagination-bar" class="pagination-bar" style="display: none;" aria-label="Result pagination"></div>
                                 </div>
                             </section>
                         </div>
