@@ -159,14 +159,17 @@ document.getElementById('clear-btn').addEventListener('click', () => {
 // Display query results
 function displayResults(result) {
     const container = document.getElementById('results-container');
+    const exportBtn = document.getElementById('export-csv-btn');
     
     if (!result.success) {
         container.innerHTML = `<div class="error-message">Error: ${result.error}</div>`;
+        if (exportBtn) exportBtn.disabled = true;
         return;
     }
     
     if (result.results.length === 0) {
         container.innerHTML = '<p class="empty-message">No results returned</p>';
+        if (exportBtn) exportBtn.disabled = true;
         return;
     }
     
@@ -187,6 +190,40 @@ function displayResults(result) {
     
     html += '</tbody></table>';
     container.innerHTML = html;
+    if (exportBtn) exportBtn.disabled = false;
+}
+
+// Export results table to CSV
+function exportResultsToCsv() {
+    const container = document.getElementById('results-container');
+    if (!container) return;
+    const table = container.querySelector('table.results-table');
+    if (!table) return;
+    
+    const rows = table.querySelectorAll('tr');
+    const lines = [];
+    rows.forEach(tr => {
+        const cells = tr.querySelectorAll('th, td');
+        const values = Array.from(cells).map(cell => {
+            const text = (cell.textContent || '').trim();
+            if (/[",\n\r]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
+            return text;
+        });
+        lines.push(values.join(','));
+    });
+    const csv = lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'query-results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+const exportCsvBtn = document.getElementById('export-csv-btn');
+if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', exportResultsToCsv);
 }
 
 // Show status message

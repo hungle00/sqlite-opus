@@ -22,6 +22,9 @@ app = Flask(__name__)
 
 # Example with pre-configured database:
 dashboard.config.db_path = "db.sqlite3"  # Database will auto-connect
+dashboard.config.auth_user = "admin"
+dashboard.config.auth_password = "password"
+dashboard.config.allow_dml = True
 dashboard.bind(app)
 
 # Define your own routes

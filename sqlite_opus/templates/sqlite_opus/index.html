@@ -65,12 +65,12 @@
                     <!-- Tabs: Table Schema | Query & Results -->
                     <ul class="nav nav-tabs mb-3" id="dashboardTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="schema-tab" data-bs-toggle="tab" data-bs-target="#schema-pane" type="button" role="tab" aria-controls="schema-pane" aria-selected="true">
+                            <button class="nav-link" id="schema-tab" data-bs-toggle="tab" data-bs-target="#schema-pane" type="button" role="tab" aria-controls="schema-pane" aria-selected="true">
                                 <i class="fas fa-table-columns me-1"></i> Table Schema
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-pane" type="button" role="tab" aria-controls="query-pane" aria-selected="false">
+                            <button class="nav-link active" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-pane" type="button" role="tab" aria-controls="query-pane" aria-selected="false">
                                 <i class="fas fa-code me-1"></i> Query & Results
                             </button>
                         </li>
@@ -78,7 +78,7 @@
 
                     <div class="tab-content" id="dashboardTabContent">
                         <!-- Tab 1: Table Schema -->
-                        <div class="tab-pane fade show active" id="schema-pane" role="tabpanel" aria-labelledby="schema-tab">
+                        <div class="tab-pane fade" id="schema-pane" role="tabpanel" aria-labelledby="schema-tab">
                             <section class="panel table-schema-panel" id="table-schema-panel">
                                 <h2>Table Schema</h2>
                                 <div id="table-schema-container" class="table-schema-container">
@@ -100,7 +100,7 @@
                         </div>
 
                         <!-- Tab 2: Query & Results -->
-                        <div class="tab-pane fade" id="query-pane" role="tabpanel" aria-labelledby="query-tab">
+                        <div class="tab-pane show active" id="query-pane" role="tabpanel" aria-labelledby="query-tab">
                             <section class="panel query-panel">
                                 <h2>Query Editor</h2>
                                 <textarea 
@@ -114,8 +114,13 @@
                                 </div>
                             </section>
 
-                            <section class="panel results-panel">
-                                <h2>Query Results</h2>
+                            <section class="panel results-panel mt-2">
+                                <div class="panel-header panel-header--with-actions">
+                                    <h2>Query Results</h2>
+                                    <button type="button" id="export-csv-btn" class="btn btn-outline-primary btn-sm" disabled title="Export current results to CSV">
+                                        <i class="fas fa-file-csv me-1"></i> Export CSV
+                                    </button>
+                                </div>
                                 <div id="results-container" class="results-container">
                                     <p class="empty-message">Execute a query to see results</p>
                                 </div>

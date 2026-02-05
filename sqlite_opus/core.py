@@ -16,6 +16,9 @@ class Config:
         self.max_query_results: int = 1000
         self.enable_cors: bool = True
         self.db_path: Optional[str] = None  # Pre-configured database path
+        self.auth_user: Optional[str] = None  # Basic Auth username (optional)
+        self.auth_password: Optional[str] = None  # Basic Auth password (optional)
+        self.allow_dml: bool = False  # If True, allow DML (INSERT/UPDATE/DELETE/...) in query API
     
     def init_from(self, **kwargs):
         """
@@ -27,6 +30,9 @@ class Config:
                 - max_query_results: Maximum number of query results (default: 1000)
                 - enable_cors: Enable CORS support (default: True)
                 - db_path: Path to SQLite database file (default: None)
+                - auth_user: Basic Auth username for index route (default: None)
+                - auth_password: Basic Auth password for index route (default: None)
+                - allow_dml: Allow DML queries in /api/query (default: False)
         """
         if "url_prefix" in kwargs:
             self.url_prefix = kwargs["url_prefix"]
@@ -36,6 +42,12 @@ class Config:
             self.enable_cors = kwargs["enable_cors"]
         if "db_path" in kwargs:
             self.db_path = kwargs["db_path"]
+        if "auth_user" in kwargs:
+            self.auth_user = kwargs["auth_user"]
+        if "auth_password" in kwargs:
+            self.auth_password = kwargs["auth_password"]
+        if "allow_dml" in kwargs:
+            self.allow_dml = kwargs["allow_dml"]
 
 
 def get_package_path() -> str:
