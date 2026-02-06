@@ -264,18 +264,6 @@ class DatabaseManager:
             except Exception:
                 return []
 
-    def get_table_info(self, table_name: str) -> Dict[str, Any]:
-        """Return schema, columns, and indexes for a table as a single hash."""
-        schema_result = self.get_table_schema(table_name)
-        if not schema_result.get("success"):
-            return schema_result
-        return {
-            "success": True,
-            "schema": schema_result["schema"],
-            "columns": self.get_all_columns(table_name),
-            "indexes": self.get_indexes(table_name),
-        }
-
     def is_connected(self) -> bool:
         """Check if database is connected."""
         return self.connection is not None

@@ -1,0 +1,24 @@
+{# Flask partial: table indexes list #}
+<p class="table-indexes-name"><strong>{{ table_name }}</strong></p>
+{% if not indexes %}
+<p class="empty-message">No indexes</p>
+{% else %}
+<table class="results-table info-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Unique</th>
+      <th>Origin</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for idx in indexes %}
+    <tr>
+      <td>{{ idx.name or '' }}</td>
+      <td>{{ 'Yes' if idx.unique else 'No' }}</td>
+      <td>{{ idx.origin or '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}

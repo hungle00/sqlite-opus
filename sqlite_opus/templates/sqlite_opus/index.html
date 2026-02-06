@@ -79,12 +79,6 @@
                     <div class="tab-content" id="dashboardTabContent">
                         <!-- Tab 1: Table Schema -->
                         <div class="tab-pane fade" id="schema-pane" role="tabpanel" aria-labelledby="schema-tab">
-                            <section class="panel table-schema-panel" id="table-schema-panel">
-                                <h2>Table Schema</h2>
-                                <div id="table-schema-container" class="table-schema-container">
-                                    <p class="empty-message">Click a table name to view its schema</p>
-                                </div>
-                            </section>
                             <section class="panel table-columns-panel" id="table-columns-panel">
                                 <h2>Columns</h2>
                                 <div id="table-columns-container" class="table-columns-container">
@@ -97,6 +91,12 @@
                                     <p class="empty-message">Click a table name to view indexes</p>
                                 </div>
                             </section>
+                            <section class="panel table-schema-panel" id="table-schema-panel">
+                                <h2>Table Schema</h2>
+                                <div id="table-schema-container" class="table-schema-container">
+                                    <p class="empty-message">Click a table name to view its schema</p>
+                                </div>
+                            </section>
                         </div>
 
                         <!-- Tab 2: Query & Results -->
@@ -106,7 +106,7 @@
                                 <textarea 
                                     id="query-editor" 
                                     placeholder="Enter your SQL query here..."
-                                    rows="10"
+                                    rows="9"
                                 ></textarea>
                                 <div class="button-group">
                                     <button id="execute-btn" class="btn btn-primary" disabled>Execute Query</button>

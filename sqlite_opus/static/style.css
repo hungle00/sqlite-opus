@@ -373,7 +373,7 @@ body {
 
 #query-editor {
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;

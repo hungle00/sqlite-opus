@@ -1,0 +1,28 @@
+{# Flask partial: table columns list #}
+<p class="table-columns-name"><strong>{{ table_name }}</strong></p>
+{% if not columns %}
+<p class="empty-message">No columns</p>
+{% else %}
+<table class="results-table info-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Not Null</th>
+      <th>Default</th>
+      <th>PK</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for col in columns %}
+    <tr>
+      <td>{{ col.name or '' }}</td>
+      <td>{{ col.type or '' }}</td>
+      <td>{{ 'Yes' if col.notnull else 'No' }}</td>
+      <td>{{ col.dflt_value if col.dflt_value is not none else '' }}</td>
+      <td>{{ 'Yes' if col.pk else 'No' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}

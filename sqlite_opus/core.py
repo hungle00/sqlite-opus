@@ -19,7 +19,7 @@ class Config:
         self.auth_user: Optional[str] = None  # Basic Auth username (optional)
         self.auth_password: Optional[str] = None  # Basic Auth password (optional)
         self.allow_dml: bool = False  # If True, allow DML (INSERT/UPDATE/DELETE/...) in query API
-        self.query_results_per_page: int = 5  # Rows per page when pagination is enabled
+        self.query_results_per_page: int = 10  # Rows per page when pagination is enabled
 
     def init_from(self, **kwargs):
         """

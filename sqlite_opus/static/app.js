@@ -48,56 +48,6 @@ function displayTableSchema(schemaString, tableName) {
     container.innerHTML = html;
 }
 
-function displayTableColumns(columns, tableName) {
-    const container = document.getElementById('table-columns-container');
-    if (!container) return;
-
-    if (!Array.isArray(columns) || columns.length === 0) {
-        container.innerHTML = `<p class="table-columns-name"><strong>${escapeHtml(tableName)}</strong></p><p class="empty-message">No columns</p>`;
-        return;
-    }
-
-    let html = `<p class="table-columns-name"><strong>${escapeHtml(tableName)}</strong></p>`;
-    html += '<table class="results-table info-table"><thead><tr>';
-    html += '<th>Name</th><th>Type</th><th>Not Null</th><th>Default</th><th>PK</th>';
-    html += '</tr></thead><tbody>';
-    columns.forEach(col => {
-        html += '<tr>';
-        html += `<td>${escapeHtml(String(col.name ?? ''))}</td>`;
-        html += `<td>${escapeHtml(String(col.type ?? ''))}</td>`;
-        html += `<td>${col.notnull ? 'Yes' : 'No'}</td>`;
-        html += `<td>${escapeHtml(col.dflt_value != null ? String(col.dflt_value) : '')}</td>`;
-        html += `<td>${col.pk ? 'Yes' : 'No'}</td>`;
-        html += '</tr>';
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-}
-
-function displayTableIndexes(indexes, tableName) {
-    const container = document.getElementById('table-indexes-container');
-    if (!container) return;
-
-    if (!Array.isArray(indexes) || indexes.length === 0) {
-        container.innerHTML = `<p class="table-indexes-name"><strong>${escapeHtml(tableName)}</strong></p><p class="empty-message">No indexes</p>`;
-        return;
-    }
-
-    let html = `<p class="table-indexes-name"><strong>${escapeHtml(tableName)}</strong></p>`;
-    html += '<table class="results-table info-table"><thead><tr>';
-    html += '<th>Name</th><th>Unique</th><th>Origin</th>';
-    html += '</tr></thead><tbody>';
-    indexes.forEach(idx => {
-        html += '<tr>';
-        html += `<td>${escapeHtml(String(idx.name ?? ''))}</td>`;
-        html += `<td>${idx.unique ? 'Yes' : 'No'}</td>`;
-        html += `<td>${escapeHtml(String(idx.origin ?? ''))}</td>`;
-        html += '</tr>';
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-}
-
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -118,6 +68,12 @@ document.getElementById('tables-list').addEventListener('click', async (e) => {
     const exportBtn = document.getElementById('export-csv-btn');
     if (exportBtn) exportBtn.disabled = false;
 
+    // Insert SELECT query into query editor when user clicks a table
+    const queryEditor = document.getElementById('query-editor');
+    if (queryEditor) {
+        queryEditor.value = `SELECT * FROM ${tableName};`;
+    }
+
     const loadingMsg = '<p class="empty-message"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
     const schemaContainer = document.getElementById('table-schema-container');
     const columnsContainer = document.getElementById('table-columns-container');
@@ -126,24 +82,33 @@ document.getElementById('tables-list').addEventListener('click', async (e) => {
     if (columnsContainer) columnsContainer.innerHTML = loadingMsg;
     if (indexesContainer) indexesContainer.innerHTML = loadingMsg;
 
-    document.getElementById('schema-tab').click();
+    // Only switch to schema tab if it is not already active
+    const schemaTab = document.getElementById('schema-tab');
+    const isSchemaActive = schemaTab && schemaTab.classList.contains('active');
+    if (schemaTab && isSchemaActive) {
+        schemaTab.click();
+    }
 
-    const info = await loadTableInfo(tableName);
+    const [info, columnsHtml, indexesHtml] = await Promise.all([
+        loadTableInfo(tableName),
+        fetch(`api/table/${encodeURIComponent(tableName)}/columns`).then(r => r.ok ? r.text() : ''),
+        fetch(`api/table/${encodeURIComponent(tableName)}/indexes`).then(r => r.ok ? r.text() : ''),
+    ]);
+
+    if (columnsContainer) columnsContainer.innerHTML = columnsHtml || '<p class="error-message">Failed to load columns</p>';
+    if (indexesContainer) indexesContainer.innerHTML = indexesHtml || '<p class="error-message">Failed to load indexes</p>';
+
     if (info === null) {
         const errMsg = '<p class="error-message">Failed to load table info</p>';
         if (schemaContainer) schemaContainer.innerHTML = errMsg;
-        if (columnsContainer) columnsContainer.innerHTML = errMsg;
-        if (indexesContainer) indexesContainer.innerHTML = errMsg;
     } else {
         displayTableSchema(info.schema ?? null, tableName);
-        displayTableColumns(info.columns ?? [], tableName);
-        displayTableIndexes(info.indexes ?? [], tableName);
     }
 });
 
 // Query results via Flask partial
 let lastQuery = '';
-let lastPerPage = 50;
+let lastPerPage = 10;
 
 async function fetchQueryPartial(query, page, perPage) {
     const res = await fetch('api/query/', {
@@ -172,7 +137,7 @@ document.getElementById('execute-btn').addEventListener('click', async () => {
         return;
     }
     lastQuery = query;
-    lastPerPage = 50;
+    lastPerPage = 10;
     try {
         const html = await fetchQueryPartial(query, 1, lastPerPage);
         renderQueryResults(html);

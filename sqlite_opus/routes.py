@@ -90,11 +90,37 @@ def register_routes(bp: Blueprint, app: Flask):
         if not db_manager.is_connected():
             return jsonify({"success": False, "error": "Not connected"}), 400
         
-        info = db_manager.get_table_info(table_name)
-        if not info.get("success"):
-            return jsonify(info), 404
-        return jsonify(info)
-    
+        schema = db_manager.get_table_schema(table_name)
+        if not schema.get("success"):
+            return jsonify(schema), 404
+        return jsonify(schema)
+
+    @bp.route("/api/table/<table_name>/columns", methods=["GET"])
+    def get_table_columns_partial(table_name):
+        """Return HTML partial for table columns (for HTMX or fetch-and-inject)."""
+        db_manager = app.sqlite_opus_db_manager
+        if not db_manager.is_connected() or not table_name:
+            return "", 400
+        columns = db_manager.get_all_columns(table_name)
+        return render_template(
+            "sqlite_opus/partials/table_columns.html",
+            table_name=table_name,
+            columns=columns,
+        )
+
+    @bp.route("/api/table/<table_name>/indexes", methods=["GET"])
+    def get_table_indexes_partial(table_name):
+        """Return HTML partial for table indexes (for HTMX or fetch-and-inject)."""
+        db_manager = app.sqlite_opus_db_manager
+        if not db_manager.is_connected() or not table_name:
+            return "", 400
+        indexes = db_manager.get_indexes(table_name)
+        return render_template(
+            "sqlite_opus/partials/table_indexes.html",
+            table_name=table_name,
+            indexes=indexes,
+        )
+
     def get_query_result(query, page=None, per_page=None):
         """Run query and return result dict for the partial template."""
         db_manager = app.sqlite_opus_db_manager
