@@ -64,6 +64,7 @@ dashboard.bind(
 
 - `url_prefix`: URL prefix for dashboard routes (default: `"sqlite-opus"`)
 - `max_query_results`: Maximum number of query results to return (default: `1000`)
+- `query_results_per_page`: Rows per page for paginated SELECT results (default: `50`)
 - `enable_cors`: Enable CORS support (default: `True`)
 
 ## Features
@@ -71,7 +72,7 @@ dashboard.bind(
 - **Web-based SQLite Query Interface**: Execute SQL queries through a web dashboard
 - **Database Connection Management**: Connect to and disconnect from SQLite databases
 - **Table Schema Viewer**: View table structures and schemas
-- **Query Results Display**: View query results in a formatted table
+- **Query Results Display**: View query results in a formatted table with **pagination** (powered by the [paginate](https://pypi.org/project/paginate/) library)
 
 ## Development
 

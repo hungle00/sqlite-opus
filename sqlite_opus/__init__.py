@@ -31,20 +31,34 @@ blueprint = Blueprint(
 )
 
 
-def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_results: int = 1000, query_results_per_page: int = None):
+def bind(
+    app,
+    url_prefix: str = None,
+    enable_cors: bool = True,
+    max_query_results: int = 1000,
+    query_results_per_page: int = None,
+    auth_user: str = None,
+    auth_password: str = None,
+    allow_dml: bool = None,
+    db_path: str = None,
+):
     """
     Bind SQLite Opus dashboard to a Flask application.
-    
+
     This function should be called after creating your Flask app but before
     running it. It will register all dashboard routes and initialize the
     database manager.
-    
+
     Args:
         app: Flask application instance to bind the dashboard to
         url_prefix: URL prefix for dashboard routes (default: "sqlite-opus")
         enable_cors: Enable CORS support (default: True)
         max_query_results: Maximum number of query results to return (default: 1000)
         query_results_per_page: Rows per page for paginated SELECT results (default: 50)
+        auth_user: Basic Auth username for dashboard routes (optional). If set with auth_password, enables HTTP Basic Auth.
+        auth_password: Basic Auth password for dashboard routes (optional).
+        allow_dml: If True, allow DML (INSERT/UPDATE/DELETE/...) in query API (default: False).
+        db_path: Path to SQLite database file for auto-connect (optional). Can also set via config.db_path before bind().
 
     Example:
         >>> from flask import Flask
@@ -52,10 +66,13 @@ def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_result
         >>> app = Flask(__name__)
         >>> dashboard.bind(app)
         >>> app.run()
+
+    Example with Basic Auth (works when package is installed in other projects):
+        >>> dashboard.bind(app, auth_user="admin", auth_password="secret", db_path="db.sqlite3")
     """
     # Store app reference in config
     config.app = app
-    
+
     # Update configuration
     if url_prefix is not None:
         config.url_prefix = url_prefix
@@ -63,6 +80,14 @@ def bind(app, url_prefix: str = None, enable_cors: bool = True, max_query_result
     config.max_query_results = max_query_results
     if query_results_per_page is not None:
         config.query_results_per_page = query_results_per_page
+    if auth_user is not None:
+        config.auth_user = auth_user
+    if auth_password is not None:
+        config.auth_password = auth_password
+    if allow_dml is not None:
+        config.allow_dml = allow_dml
+    if db_path is not None:
+        config.db_path = db_path
 
     # Initialize database manager and attach to app
     if not hasattr(app, "sqlite_opus_db_manager"):
