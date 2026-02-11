@@ -1,5 +1,7 @@
 """Flask routes for SQLite Opus dashboard."""
 
+import csv
+import io
 import re
 from functools import wraps
 from flask import Blueprint, render_template, request, jsonify, Flask, Response
@@ -199,6 +201,37 @@ def register_routes(bp: Blueprint, app: Flask):
             columns=result.get("columns", []),
             pagination=pagination,
             page_numbers=page_numbers,
+        )
+
+    @bp.route("/api/query/export", methods=["POST"])
+    def export_query_csv():
+        """Run the current SELECT query and return results as CSV download."""
+        data = request.get_json() or {}
+        query = (data.get("query") or "").strip()
+        if not query:
+            return jsonify({"success": False, "error": "Query required"}), 400
+        if not query.upper().startswith("SELECT"):
+            return jsonify({"success": False, "error": "Only SELECT queries can be exported as CSV"}), 400
+        if contains_dml(query) and not config.allow_dml:
+            return jsonify({
+                "success": False,
+                "error": "DML queries are not allowed. Set config.allow_dml = True to enable.",
+            }), 400
+        result = get_query_result(query, page=None, per_page=None)
+        if not result.get("success"):
+            return jsonify({"success": False, "error": result.get("error", "Query failed")}), 400
+        columns = result.get("columns", [])
+        results = result.get("results", [])
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(columns)
+        for row in results:
+            writer.writerow([row.get(col) for col in columns])
+        csv_str = buf.getvalue()
+        return Response(
+            csv_str,
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment; filename=export.csv"},
         )
 
 def basic_auth_required(f):

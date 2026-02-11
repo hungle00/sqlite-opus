@@ -108,6 +108,8 @@
                                     placeholder="Enter your SQL query here..."
                                     rows="9"
                                 ></textarea>
+                                <!-- Hidden field to store last executed query for export/persistence -->
+                                <input type="hidden" id="last-executed-query" value="">
                                 <div class="button-group">
                                     <button id="execute-btn" class="btn btn-primary" disabled>Execute Query</button>
                                     <button id="clear-btn" class="btn btn-secondary">Clear</button>
@@ -117,7 +119,7 @@
                             <section class="panel results-panel mt-2">
                                 <div class="panel-header panel-header--with-actions">
                                     <h2>Query Results</h2>
-                                    <button type="button" id="export-csv-btn" class="btn btn-outline-primary btn-sm" disabled title="Export selected table to CSV">
+                                    <button type="button" id="export-csv-btn" class="btn btn-outline-primary btn-sm" disabled title="Export current SELECT query result as CSV">
                                         <i class="fas fa-file-csv me-1"></i> Export CSV
                                     </button>
                                 </div>

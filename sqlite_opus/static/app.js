@@ -65,8 +65,6 @@ document.getElementById('tables-list').addEventListener('click', async (e) => {
     if (!tableName) return;
 
     selectedTableName = tableName;
-    const exportBtn = document.getElementById('export-csv-btn');
-    if (exportBtn) exportBtn.disabled = false;
 
     // Insert SELECT query into query editor when user clicks a table
     const queryEditor = document.getElementById('query-editor');
@@ -137,6 +135,10 @@ document.getElementById('execute-btn').addEventListener('click', async () => {
         return;
     }
     lastQuery = query;
+    const hiddenLastQuery = document.getElementById('last-executed-query');
+    if (hiddenLastQuery) {
+        hiddenLastQuery.value = query;
+    }
     lastPerPage = 10;
     try {
         const html = await fetchQueryPartial(query, 1, lastPerPage);
@@ -146,9 +148,14 @@ document.getElementById('execute-btn').addEventListener('click', async () => {
     }
 });
 
-// Clear query
+// Clear query (also clear last executed query so export uses fresh results)
 document.getElementById('clear-btn').addEventListener('click', () => {
     document.getElementById('query-editor').value = '';
+    lastQuery = '';
+    const hiddenLastQuery = document.getElementById('last-executed-query');
+    if (hiddenLastQuery) {
+        hiddenLastQuery.value = '';
+    }
 });
 
 // Pagination: delegate on query-results-area so it works after partial inject
@@ -165,15 +172,45 @@ document.getElementById('query-results-area').addEventListener('click', async (e
     }
 });
 
-// Export selected table as CSV via API
+// Export result of last executed query as CSV (uses same query as the results table)
 async function exportTableToCsv() {
-    if (!selectedTableName) {
-        if (typeof showStatus === 'function') showStatus('Select a table first', 'error');
+    const hiddenLastQuery = document.getElementById('last-executed-query');
+    const query = hiddenLastQuery ? hiddenLastQuery.value.trim() : '';
+    if (!query) {
+        if (typeof showStatus === 'function') showStatus('Execute a query first to export results', 'error');
         return;
     }
-    // const exportBtn = document.getElementById('export-csv-btn');
-    // if (exportBtn) exportBtn.disabled = true;
-    // call api/table/${encodeURIComponent(selectedTableName)}/export
+    if (!query.toUpperCase().startsWith('SELECT')) {
+        if (typeof showStatus === 'function') showStatus('Only SELECT queries can be exported as CSV', 'error');
+        return;
+    }
+    const exportBtn = document.getElementById('export-csv-btn');
+    if (exportBtn) exportBtn.disabled = true;
+    try {
+        const res = await fetch('api/query/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            if (typeof showStatus === 'function') showStatus(err.error || 'Export failed', 'error');
+            return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const csvFilename = selectedTableName ? `${selectedTableName}_export.csv` : 'export.csv';
+        a.download = csvFilename;
+        a.click();
+        URL.revokeObjectURL(url);
+        if (typeof showStatus === 'function') showStatus('CSV exported successfully', 'success');
+    } catch (err) {
+        if (typeof showStatus === 'function') showStatus('Export failed: ' + err.message, 'error');
+    } finally {
+        if (exportBtn) exportBtn.disabled = false;
+    }
 }
 
 const exportCsvBtn = document.getElementById('export-csv-btn');
@@ -197,6 +234,9 @@ function showStatus(message, type) {
 window.addEventListener('load', async () => {
     const status = await apiRequest('api/status');
     if (status.connected) {
-        document.getElementById('execute-btn').disabled = false;
+        const executeBtn = document.getElementById('execute-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        if (executeBtn) executeBtn.disabled = false;
+        if (exportCsvBtn) exportCsvBtn.disabled = false;
     }
 });
