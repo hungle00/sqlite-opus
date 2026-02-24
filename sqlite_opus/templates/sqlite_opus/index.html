@@ -68,6 +68,9 @@
                 {% endif %}
 
                 {% if has_preconfigured_db %}
+                    <div id="app-status-banner" class="app-status-banner" role="alert" aria-live="polite" hidden>
+                        <span id="app-status-message"></span>
+                    </div>
                     <!-- Tabs: Table Schema | Query & Results -->
                     <ul class="nav nav-tabs mb-3" id="dashboardTabs" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -108,7 +111,18 @@
                         <!-- Tab 2: Query & Results -->
                         <div class="tab-pane show active" id="query-pane" role="tabpanel" aria-labelledby="query-tab">
                             <section class="panel query-panel">
-                                <h2>Query Editor</h2>
+                                <div class="panel-header panel-header--with-actions">
+                                    <h2>Query Editor</h2>
+                                    <select id="query-type-select" class="form-select form-select-sm" style="width: auto; min-width: 140px;" aria-label="Insert query template">
+                                        <option value="">Select query...</option>
+                                        <option value="select">SELECT</option>
+                                        <option value="insert">INSERT</option>
+                                        <option value="update">UPDATE</option>
+                                        <option value="delete">DELETE</option>
+                                        <option value="truncate">TRUNCATE</option>
+                                        <option value="replace">REPLACE</option>
+                                    </select>
+                                </div>
                                 <textarea 
                                     id="query-editor" 
                                     placeholder="Enter your SQL query here..."

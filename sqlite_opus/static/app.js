@@ -18,10 +18,36 @@ async function apiRequest(url, method = 'GET', data = null) {
 }
 
 // Connection management (only if connection panel exists)
-const statusEl = document.getElementById('connection-status');
+const statusBanner = document.getElementById('app-status-banner');
+const statusMessageEl = document.getElementById('app-status-message');
 
 // Currently selected table (for export)
 let selectedTableName = null;
+
+// Query type select: insert template into query editor
+const queryTypeSnippets = {
+    select: 'SELECT * FROM table_name;',
+    insert: 'INSERT INTO table_name (column1, column2) VALUES (?, ?);',
+    update: 'UPDATE table_name SET column1 = ? WHERE ;',
+    delete: 'DELETE FROM table_name WHERE ;',
+    truncate: 'DELETE FROM table_name;',
+    replace: 'REPLACE INTO table_name (column1) VALUES (?);',
+};
+
+const queryTypeSelect = document.getElementById('query-type-select');
+const queryEditorEl = document.getElementById('query-editor');
+if (queryTypeSelect && queryEditorEl) {
+    queryTypeSelect.addEventListener('change', function () {
+        const value = this.value;
+        if (!value || !queryTypeSnippets[value]) return;
+        let snippet = queryTypeSnippets[value];
+        const table = selectedTableName || 'table_name';
+        snippet = snippet.replace(/table_name/g, table);
+        queryEditorEl.value = snippet;
+        queryEditorEl.focus();
+        queryTypeSelect.value = '';
+    });
+}
 
 const loadingMsg = '<p class="empty-message"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
 
@@ -48,7 +74,8 @@ document.body.addEventListener('htmx:afterSettle', () => {
     if (!pendingTableInfoLoad) return;
     pendingTableInfoLoad = false;
     const schemaTab = document.getElementById('schema-tab');
-    if (schemaTab) schemaTab.click();
+    const isSchemaActive = schemaTab && schemaTab.classList.contains('active');
+    if (schemaTab && isSchemaActive) schemaTab.click();
 });
 
 // Query results via Flask partial
@@ -165,16 +192,17 @@ if (exportCsvBtn) {
     exportCsvBtn.addEventListener('click', exportTableToCsv);
 }
 
-// Show status message
+// Show status message in top banner (only visible when called; hides after 5s or on dismiss)
 function showStatus(message, type) {
-    if (statusEl) {
-        statusEl.textContent = message;
-        statusEl.className = `status-message ${type}`;
-        
-        setTimeout(() => {
-            statusEl.className = 'status-message';
-        }, 5000);
-    }
+    if (!statusBanner || !statusMessageEl) return;
+    statusMessageEl.textContent = message;
+    statusBanner.className = `app-status-banner app-status-banner--${type}`;
+    statusBanner.hidden = false;
+    const hide = () => {
+        statusBanner.hidden = true;
+    };
+    clearTimeout(showStatus._timeout);
+    showStatus._timeout = setTimeout(hide, 5000);
 }
 
 // Check connection status on load
