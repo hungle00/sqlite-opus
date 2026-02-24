@@ -85,18 +85,6 @@ def register_routes(bp: Blueprint, app: Flask):
         tables = db_manager.get_tables()
         return jsonify({"success": True, "tables": tables})
     
-    @bp.route("/api/table/<table_name>", methods=["GET"])
-    def get_table_info(table_name):
-        """Get schema, columns, and indexes for a specific table (single hash)."""
-        db_manager = app.sqlite_opus_db_manager
-        if not db_manager.is_connected():
-            return jsonify({"success": False, "error": "Not connected"}), 400
-        
-        schema = db_manager.get_table_schema(table_name)
-        if not schema.get("success"):
-            return jsonify(schema), 404
-        return jsonify(schema)
-
     @bp.route("/api/table/<table_name>/columns", methods=["GET"])
     def get_table_columns_partial(table_name):
         """Return HTML partial for table columns (for HTMX or fetch-and-inject)."""
@@ -121,6 +109,24 @@ def register_routes(bp: Blueprint, app: Flask):
             "sqlite_opus/partials/table_indexes.html",
             table_name=table_name,
             indexes=indexes,
+        )
+
+    @bp.route("/api/table/<table_name>/", methods=["GET"])
+    def get_table_info_partial(table_name):
+        """Return HTML with out-of-band swaps for columns, indexes, and schema (one request, three panel updates)."""
+        db_manager = app.sqlite_opus_db_manager
+        if not db_manager.is_connected() or not table_name:
+            return "", 400
+        columns = db_manager.get_all_columns(table_name)
+        indexes = db_manager.get_indexes(table_name)
+        schema_result = db_manager.get_table_schema(table_name)
+        schema = (schema_result.get("schema") or "").strip() if schema_result.get("success") else ""
+        return render_template(
+            "sqlite_opus/partials/table_info.html",
+            table_name=table_name,
+            columns=columns,
+            indexes=indexes,
+            schema=schema,
         )
 
     def get_query_result(query, page=None, per_page=None):

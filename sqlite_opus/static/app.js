@@ -20,88 +20,35 @@ async function apiRequest(url, method = 'GET', data = null) {
 // Connection management (only if connection panel exists)
 const statusEl = document.getElementById('connection-status');
 
-async function loadTableInfo(table_name) {
-    const result = await apiRequest(`api/table/${encodeURIComponent(table_name)}`, 'GET');
-    if (result.success) {
-        return result;
-    }
-    return null;
-}
-
-function displayTableSchema(schemaString, tableName) {
-    const container = document.getElementById('table-schema-container');
-    if (!container) return;
-
-    if (!schemaString || typeof schemaString !== 'string') {
-        container.innerHTML = '<p class="empty-message">No schema information</p>';
-        return;
-    }
-
-    const trimmed = schemaString.trim();
-    if (!trimmed) {
-        container.innerHTML = '<p class="empty-message">No schema information</p>';
-        return;
-    }
-
-    let html = `<p class="schema-table-name"><strong>${escapeHtml(tableName)}</strong></p>`;
-    html += '<pre class="schema-sql"><code>' + escapeHtml(trimmed) + '</code></pre>';
-    container.innerHTML = html;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 // Currently selected table (for export)
 let selectedTableName = null;
 
-// Click on table name: load and display schema, columns, indexes
-document.getElementById('tables-list').addEventListener('click', async (e) => {
-    const item = e.target.closest('.table-item');
-    if (!item) return;
-    const tableName = item.dataset.tableName;
-    if (!tableName) return;
+const loadingMsg = '<p class="empty-message"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
 
-    selectedTableName = tableName;
-
-    // Insert SELECT query into query editor when user clicks a table
-    const queryEditor = document.getElementById('query-editor');
-    if (queryEditor) {
-        queryEditor.value = `SELECT * FROM ${tableName};`;
+// HTMX: before table info request — set selected table, query editor, show loading, flag for tab switch
+let pendingTableInfoLoad = false;
+document.body.addEventListener('htmx:beforeRequest', (e) => {
+    const elt = e.detail?.elt;
+    if (!elt?.classList?.contains('table-item') || !elt?.getAttribute?.('hx-get')) return;
+    pendingTableInfoLoad = true;
+    const tableName = elt.dataset?.tableName;
+    if (tableName) {
+        selectedTableName = tableName;
+        const queryEditor = document.getElementById('query-editor');
+        if (queryEditor) queryEditor.value = `SELECT * FROM ${tableName};`;
     }
-
-    const loadingMsg = '<p class="empty-message"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
     const schemaContainer = document.getElementById('table-schema-container');
     const columnsContainer = document.getElementById('table-columns-container');
     const indexesContainer = document.getElementById('table-indexes-container');
     if (schemaContainer) schemaContainer.innerHTML = loadingMsg;
     if (columnsContainer) columnsContainer.innerHTML = loadingMsg;
     if (indexesContainer) indexesContainer.innerHTML = loadingMsg;
-
-    // Only switch to schema tab if it is not already active
+});
+document.body.addEventListener('htmx:afterSettle', () => {
+    if (!pendingTableInfoLoad) return;
+    pendingTableInfoLoad = false;
     const schemaTab = document.getElementById('schema-tab');
-    const isSchemaActive = schemaTab && schemaTab.classList.contains('active');
-    if (schemaTab && isSchemaActive) {
-        schemaTab.click();
-    }
-
-    const [info, columnsHtml, indexesHtml] = await Promise.all([
-        loadTableInfo(tableName),
-        fetch(`api/table/${encodeURIComponent(tableName)}/columns`).then(r => r.ok ? r.text() : ''),
-        fetch(`api/table/${encodeURIComponent(tableName)}/indexes`).then(r => r.ok ? r.text() : ''),
-    ]);
-
-    if (columnsContainer) columnsContainer.innerHTML = columnsHtml || '<p class="error-message">Failed to load columns</p>';
-    if (indexesContainer) indexesContainer.innerHTML = indexesHtml || '<p class="error-message">Failed to load indexes</p>';
-
-    if (info === null) {
-        const errMsg = '<p class="error-message">Failed to load table info</p>';
-        if (schemaContainer) schemaContainer.innerHTML = errMsg;
-    } else {
-        displayTableSchema(info.schema ?? null, tableName);
-    }
+    if (schemaTab) schemaTab.click();
 });
 
 // Query results via Flask partial

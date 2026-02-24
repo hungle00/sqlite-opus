@@ -41,7 +41,13 @@
                     <div id="tables-list" class="tables-list">
                         {% if tables %}
                         {% for table in tables %}
-                        <div class="table-item" data-table-name="{{ table }}" title="Click to view schema"><i class="fas fa-table"></i> {{ table }}</div>
+                        <div class="table-item"
+                             data-table-name="{{ table }}"
+                             title="Click to view schema"
+                             hx-get="{{ url_for(blueprint_name ~ '.get_table_info_partial', table_name=table) }}"
+                             hx-trigger="click"
+                             hx-target="body"
+                             hx-swap="none"><i class="fas fa-table"></i> {{ table }}</div>
                         {% endfor %}
                         {% else %}
                         <p class="empty-message">Connect to a database to see tables</p>
@@ -137,6 +143,8 @@
         </div>
     </div>
 
+    <!-- HTMX 2.x -->
+    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" crossorigin="anonymous"></script>
     <!-- Bootstrap 5 JS bundle (for tabs) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="{{ url_for(blueprint_name ~ '.static', filename='app.js') }}"></script>
