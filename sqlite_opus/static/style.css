@@ -263,25 +263,27 @@ body {
     cursor: not-allowed;
 }
 
-.status-message {
-    padding: 10px;
-    border-radius: 4px;
-    margin-top: 10px;
-    display: none;
+.app-status-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    width: 100%;
+    box-sizing: border-box;
 }
-
-.status-message.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-    display: block;
+.app-status-banner[hidden] {
+    display: none !important;
 }
-
-.status-message.error {
+.app-status-banner--error {
     background-color: #f8d7da;
     color: #721c24;
-    border: 1px solid #f5c6cb;
-    display: block;
+    border-bottom: 1px solid #f5c6cb;
+}
+.app-status-banner--success {
+    background-color: #d4edda;
+    color: #155724;
+    border-bottom: 1px solid #c3e6cb;
 }
 
 .tables-list {

@@ -1,0 +1,11 @@
+{# Combined HTMX response: one no-op main swap + three out-of-band swaps for columns, indexes, schema #}
+<div></div>
+<div id="table-columns-container" hx-swap-oob="true" class="table-columns-container">
+    {% include "sqlite_opus/partials/table_columns.html" %}
+</div>
+<div id="table-indexes-container" hx-swap-oob="true" class="table-indexes-container">
+    {% include "sqlite_opus/partials/table_indexes.html" %}
+</div>
+<div id="table-schema-container" hx-swap-oob="true" class="table-schema-container">
+    {% include "sqlite_opus/partials/table_schema.html" %}
+</div>

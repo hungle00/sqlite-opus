@@ -1,0 +1,7 @@
+{# Flask partial: table schema (CREATE statement) #}
+<p class="schema-table-name"><strong>{{ table_name }}</strong></p>
+{% if not schema or not schema.strip() %}
+<p class="empty-message">No schema information</p>
+{% else %}
+<pre class="schema-sql"><code>{{ schema.strip() | e }}</code></pre>
+{% endif %}
