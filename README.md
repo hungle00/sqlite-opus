@@ -63,9 +63,22 @@ dashboard.bind(
 ### Configuration Options
 
 - `url_prefix`: URL prefix for dashboard routes (default: `"sqlite-opus"`)
-- `max_query_results`: Maximum number of query results to return (default: `1000`)
-- `query_results_per_page`: Rows per page for paginated SELECT results (default: `50`)
+- `db_path`: Path to a SQLite database file for auto-connect on startup
 - `enable_cors`: Enable CORS support (default: `True`)
+- `auth_user` / `auth_password`: HTTP Basic Auth for all dashboard routes (optional). When both are set, every request must supply valid credentials.
+- `allow_dml`: If `True`, allow write queries (INSERT/UPDATE/DELETE/CREATE/…). Default: `False` (read-only).
+
+**Security (production):** Use Basic Auth and keep `allow_dml` disabled in production for a more secure setup. Example:
+
+```python
+dashboard.bind(
+    app,
+    auth_user="admin",
+    auth_password="your-strong-password",
+    allow_dml=False,  # read-only
+    db_path="data.db",
+)
+```
 
 ## Features
 
