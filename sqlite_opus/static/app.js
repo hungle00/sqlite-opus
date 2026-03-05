@@ -1,22 +1,5 @@
 // Basic JavaScript for SQLite Opus Dashboard
 
-// API helper functions
-async function apiRequest(url, method = 'GET', data = null) {
-    const options = {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    };
-    
-    if (data) {
-        options.body = JSON.stringify(data);
-    }
-    
-    const response = await fetch(url, options);
-    return response.json();
-}
-
 // Connection management (only if connection panel exists)
 const statusBanner = document.getElementById('app-status-banner');
 const statusMessageEl = document.getElementById('app-status-message');
@@ -78,73 +61,35 @@ document.body.addEventListener('htmx:afterSettle', () => {
     if (schemaTab && isSchemaActive) schemaTab.click();
 });
 
-// Query results via Flask partial
-let lastQuery = '';
-let lastPerPage = 10;
-
-async function fetchQueryPartial(query, page, perPage) {
-    const res = await fetch('api/query/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query, page: page || 1, per_page: perPage || 50 }),
-    });
-    const html = await res.text();
-    return html;
-}
-
-function renderQueryResults(html) {
-    const area = document.getElementById('query-results-area');
-    if (area) area.innerHTML = html;
-}
-
-// Execute query (page 1) – fetch HTML partial and inject
-document.getElementById('execute-btn').addEventListener('click', async () => {
-    const query = document.getElementById('query-editor').value.trim();
+// HTMX: before execute-query form submit — block if query is empty and show error
+document.body.addEventListener('htmx:beforeRequest', (e) => {
+    const form = e.detail?.elt?.closest?.('form');
+    if (form?.id !== 'query-form') return;
+    const query = (document.getElementById('query-editor')?.value || '').trim();
     if (!query) {
+        e.preventDefault();
         showStatus('Please enter a query', 'error');
-        const area = document.getElementById('query-results-area');
-        if (area) {
-            area.innerHTML = '<div id="results-container" class="results-container"><p class="empty-message">Please enter a query above.</p></div><div id="pagination-bar" class="pagination-bar" style="display: none;"></div>';
-        }
-        return;
-    }
-    lastQuery = query;
-    const hiddenLastQuery = document.getElementById('last-executed-query');
-    if (hiddenLastQuery) {
-        hiddenLastQuery.value = query;
-    }
-    lastPerPage = 10;
-    try {
-        const html = await fetchQueryPartial(query, 1, lastPerPage);
-        renderQueryResults(html);
-    } catch (err) {
-        showStatus('Request failed: ' + err.message, 'error');
     }
 });
 
-// Clear query (also clear last executed query so export uses fresh results)
-document.getElementById('clear-btn').addEventListener('click', () => {
+// HTMX: after query results swap — sync last-executed-query for Export CSV
+document.body.addEventListener('htmx:afterSwap', (e) => {
+    if (e.detail?.target?.id !== 'query-results-area') return;
+    const queryEditor = document.getElementById('query-editor');
+    const hiddenLastQuery = document.getElementById('last-executed-query');
+    if (queryEditor && hiddenLastQuery) {
+        hiddenLastQuery.value = queryEditor.value.trim();
+    }
+});
+
+// Clear query (and last-executed-query so export uses fresh state)
+document.getElementById('clear-btn').addEventListener('click', (e) => {
+    e.preventDefault();
     document.getElementById('query-editor').value = '';
-    lastQuery = '';
     const hiddenLastQuery = document.getElementById('last-executed-query');
-    if (hiddenLastQuery) {
-        hiddenLastQuery.value = '';
-    }
+    if (hiddenLastQuery) hiddenLastQuery.value = '';
 });
 
-// Pagination: delegate on query-results-area so it works after partial inject
-document.getElementById('query-results-area').addEventListener('click', async (e) => {
-    const btn = e.target.closest('.pagination-btn');
-    if (!btn || !lastQuery) return;
-    const page = parseInt(btn.dataset.page, 10);
-    if (isNaN(page)) return;
-    try {
-        const html = await fetchQueryPartial(lastQuery, page, lastPerPage);
-        renderQueryResults(html);
-    } catch (err) {
-        showStatus('Request failed: ' + err.message, 'error');
-    }
-});
 
 // Export result of last executed query as CSV (uses same query as the results table)
 async function exportTableToCsv() {
@@ -207,7 +152,8 @@ function showStatus(message, type) {
 
 // Check connection status on load
 window.addEventListener('load', async () => {
-    const status = await apiRequest('api/status');
+    const res = await fetch('api/status');
+    const status = res.ok ? await res.json() : {};
     if (status.connected) {
         const executeBtn = document.getElementById('execute-btn');
         const exportCsvBtn = document.getElementById('export-csv-btn');

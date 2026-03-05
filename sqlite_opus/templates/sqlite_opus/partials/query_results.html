@@ -36,21 +36,29 @@
       {% set start = (pagination.page - 1) * pagination.per_page + 1 %}
       {% set end = [pagination.page * pagination.per_page, pagination.total_count] | min %}
       <div class="pagination-controls">
-        <span class="pagination-info">{{ start }}&ndash;{{ end }} of {{ pagination.total_count }}</span>
-        <span class="pagination-buttons">
-          {% if pagination.page > 1 %}
-          <button type="button" class="btn btn-sm btn-outline-secondary pagination-btn" data-page="{{ pagination.page - 1 }}" aria-label="Previous">Prev</button>
-          {% endif %}
-          {% for i in page_numbers %}
-            {% if loop.index > 1 and i > page_numbers[loop.index - 2] + 1 %}
-            <span class="pagination-ellipsis">…</span>
+        <form hx-post="{{ url_for(blueprint_name ~ '.execute_query') }}" 
+          hx-target="#query-results-area" hx-swap="innerHTML">
+          <input type="hidden" name="query" value="{{ current_query }}">
+          <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+          <span class="pagination-info">{{ start }}&ndash;{{ end }} of {{ pagination.total_count }}</span>
+          <span class="pagination-buttons">
+            {% if pagination.page > 1 %}
+            <button type="submit" name="page" value="{{ pagination.page - 1 }}"
+            class="btn btn-sm btn-outline-secondary pagination-btn" aria-label="Previous">Prev</button>
             {% endif %}
-            <button type="button" class="btn btn-sm {{ 'btn-primary' if i == pagination.page else 'btn-outline-secondary' }} pagination-btn" data-page="{{ i }}">{{ i }}</button>
-          {% endfor %}
-          {% if pagination.page < pagination.total_pages %}
-          <button type="button" class="btn btn-sm btn-outline-secondary pagination-btn" data-page="{{ pagination.page + 1 }}" aria-label="Next">Next</button>
-          {% endif %}
-        </span>
+            {% for i in page_numbers %}
+              {% if loop.index > 1 and i > page_numbers[loop.index - 2] + 1 %}
+              <span class="pagination-ellipsis">…</span>
+              {% endif %}
+              <button type="submit" name="page" value="{{ i }}"
+              class="btn btn-sm {{ 'btn-primary' if i == pagination.page else 'btn-outline-secondary' }} pagination-btn">{{ i }}</button>
+            {% endfor %}
+            {% if pagination.page < pagination.total_pages %}
+            <button type="submit" name="page" value="{{ pagination.page + 1 }}"
+            class="btn btn-sm btn-outline-secondary pagination-btn" aria-label="Next">Next</button>
+            {% endif %}
+          </span>
+        </form>
       </div>
     {% else %}
       <span class="pagination-info">Page 1 of 1 ({{ pagination.total_count }} row{{ 's' if pagination.total_count != 1 else '' }})</span>
