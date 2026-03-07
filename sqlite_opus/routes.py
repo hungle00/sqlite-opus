@@ -85,32 +85,6 @@ def register_routes(bp: Blueprint, app: Flask):
         tables = db_manager.get_tables()
         return jsonify({"success": True, "tables": tables})
     
-    @bp.route("/api/table/<table_name>/columns", methods=["GET"])
-    def get_table_columns_partial(table_name):
-        """Return HTML partial for table columns (for HTMX or fetch-and-inject)."""
-        db_manager = app.sqlite_opus_db_manager
-        if not db_manager.is_connected() or not table_name:
-            return "", 400
-        columns = db_manager.get_all_columns(table_name)
-        return render_template(
-            "sqlite_opus/partials/table_columns.html",
-            table_name=table_name,
-            columns=columns,
-        )
-
-    @bp.route("/api/table/<table_name>/indexes", methods=["GET"])
-    def get_table_indexes_partial(table_name):
-        """Return HTML partial for table indexes (for HTMX or fetch-and-inject)."""
-        db_manager = app.sqlite_opus_db_manager
-        if not db_manager.is_connected() or not table_name:
-            return "", 400
-        indexes = db_manager.get_indexes(table_name)
-        return render_template(
-            "sqlite_opus/partials/table_indexes.html",
-            table_name=table_name,
-            indexes=indexes,
-        )
-
     @bp.route("/api/table/<table_name>/", methods=["GET"])
     def get_table_info_partial(table_name):
         """Return HTML with out-of-band swaps for columns, indexes, and schema (one request, three panel updates)."""
@@ -165,8 +139,14 @@ def register_routes(bp: Blueprint, app: Flask):
 
     @bp.route("/api/query/", methods=["POST"])
     def execute_query():
-        """Execute a SQL query and return HTML partial (results table + pagination)."""
-        data = request.get_json() or {}
+        """Execute a SQL query and return HTML partial (results table + pagination). Accepts JSON or form data (HTMX)."""
+        data = request.get_json(silent=True) or {}
+        if not data and request.form:
+            data = {
+                "query": request.form.get("query") or "",
+                "page": request.form.get("page"),
+                "per_page": request.form.get("per_page"),
+            }
         query = (data.get("query") or "").strip()
         if not query:
             return render_template(
@@ -184,7 +164,7 @@ def register_routes(bp: Blueprint, app: Flask):
                 page = int(p)
         except (TypeError, ValueError):
             pass
-        per_page = getattr(config, "query_results_per_page", 50)
+        per_page = getattr(config, "query_results_per_page", 20)
         try:
             pp = data.get("per_page")
             if pp is not None:
@@ -205,6 +185,7 @@ def register_routes(bp: Blueprint, app: Flask):
             error=result.get("error"),
             results=result.get("results", []),
             columns=result.get("columns", []),
+            current_query=query,
             pagination=pagination,
             page_numbers=page_numbers,
         )

@@ -111,29 +111,35 @@
                         <!-- Tab 2: Query & Results -->
                         <div class="tab-pane show active" id="query-pane" role="tabpanel" aria-labelledby="query-tab">
                             <section class="panel query-panel">
-                                <div class="panel-header panel-header--with-actions">
-                                    <h2>Query Editor</h2>
-                                    <select id="query-type-select" class="form-select form-select-sm" style="width: auto; min-width: 140px;" aria-label="Insert query template">
-                                        <option value="">Select query...</option>
-                                        <option value="select">SELECT</option>
-                                        <option value="insert">INSERT</option>
-                                        <option value="update">UPDATE</option>
-                                        <option value="delete">DELETE</option>
-                                        <option value="truncate">TRUNCATE</option>
-                                        <option value="replace">REPLACE</option>
-                                    </select>
-                                </div>
-                                <textarea 
-                                    id="query-editor" 
-                                    placeholder="Enter your SQL query here..."
-                                    rows="9"
-                                ></textarea>
-                                <!-- Hidden field to store last executed query for export/persistence -->
-                                <input type="hidden" id="last-executed-query" value="">
-                                <div class="button-group">
-                                    <button id="execute-btn" class="btn btn-primary" disabled>Execute Query</button>
-                                    <button id="clear-btn" class="btn btn-secondary">Clear</button>
-                                </div>
+                                <form id="query-form" 
+                                    hx-post="{{ url_for(blueprint_name ~ '.execute_query') }}" 
+                                    hx-target="#query-results-area" 
+                                    hx-swap="innerHTML">
+                                    <div class="panel-header panel-header--with-actions">
+                                        <h2>Query Editor</h2>
+                                        <select id="query-type-select" class="form-select form-select-sm" style="width: auto; min-width: 140px;" aria-label="Insert query template">
+                                            <option value="">Select query...</option>
+                                            <option value="select">SELECT</option>
+                                            <option value="insert">INSERT</option>
+                                            <option value="update">UPDATE</option>
+                                            <option value="delete">DELETE</option>
+                                            <option value="truncate">TRUNCATE</option>
+                                            <option value="replace">REPLACE</option>
+                                        </select>
+                                    </div>
+                                    <textarea id="query-editor"
+                                              name="query"
+                                              placeholder="Enter your SQL query here..."
+                                              rows="9"></textarea>
+                                    <!-- Hidden field to store last executed query for export/persistence -->
+                                    <input type="hidden" id="last-executed-query" value="">
+                                    <input type="hidden" name="page" value="1">
+                                    <input type="hidden" name="per_page" value="20">
+                                    <div class="button-group">
+                                        <button id="execute-btn" type="submit" class="btn btn-primary" disabled>Execute Query</button>
+                                        <button id="clear-btn" type="button" class="btn btn-secondary">Clear</button>
+                                    </div>
+                                </form>
                             </section>
 
                             <section class="panel results-panel mt-2">
