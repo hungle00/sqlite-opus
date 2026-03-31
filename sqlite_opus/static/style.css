@@ -391,6 +391,26 @@ body {
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
 }
 
+/* CodeMirror replaces the textarea; keep look aligned with the rest of the UI */
+.query-panel .CodeMirror {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    background: var(--surface-alt);
+}
+
+.query-panel .CodeMirror-focused {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.query-panel .CodeMirror-gutters {
+    background: var(--surface-alt);
+    border-right: 1px solid var(--border);
+}
+
 .results-container {
     max-height: 500px;
     width: 100%;

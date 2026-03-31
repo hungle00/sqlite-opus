@@ -7,6 +7,51 @@ const statusMessageEl = document.getElementById('app-status-message');
 // Currently selected table (for export)
 let selectedTableName = null;
 
+/** CodeMirror instance for the SQL editor, or null if not initialized. */
+let queryCm = null;
+
+function initQueryCodeMirror() {
+    const ta = document.getElementById('query-editor');
+    if (!ta || typeof CodeMirror === 'undefined') return;
+    queryCm = CodeMirror.fromTextArea(ta, {
+        mode: 'text/x-sql',
+        theme: 'eclipse',
+        lineNumbers: true,
+        indentUnit: 2,
+        lineWrapping: true,
+        viewportMargin: 50,
+    });
+    queryCm.setSize('100%', '220px');
+}
+
+function getQueryValue() {
+    if (queryCm) return queryCm.getValue();
+    const el = document.getElementById('query-editor');
+    return el ? el.value : '';
+}
+
+function setQueryValue(text) {
+    if (queryCm) {
+        queryCm.setValue(text);
+        queryCm.save();
+    } else {
+        const el = document.getElementById('query-editor');
+        if (el) el.value = text;
+    }
+}
+
+function focusQueryEditor() {
+    if (queryCm) queryCm.focus();
+    else document.getElementById('query-editor')?.focus();
+}
+
+/** Copy editor content into the hidden textarea (required before HTMX submits the form). */
+function syncQueryToTextarea() {
+    if (queryCm) queryCm.save();
+}
+
+initQueryCodeMirror();
+
 // Query type select: insert template into query editor
 const queryTypeSnippets = {
     select: 'SELECT * FROM table_name;',
@@ -18,16 +63,15 @@ const queryTypeSnippets = {
 };
 
 const queryTypeSelect = document.getElementById('query-type-select');
-const queryEditorEl = document.getElementById('query-editor');
-if (queryTypeSelect && queryEditorEl) {
+if (queryTypeSelect) {
     queryTypeSelect.addEventListener('change', function () {
         const value = this.value;
         if (!value || !queryTypeSnippets[value]) return;
         let snippet = queryTypeSnippets[value];
         const table = selectedTableName || 'table_name';
         snippet = snippet.replace(/table_name/g, table);
-        queryEditorEl.value = snippet;
-        queryEditorEl.focus();
+        setQueryValue(snippet);
+        focusQueryEditor();
         queryTypeSelect.value = '';
     });
 }
@@ -43,8 +87,7 @@ document.body.addEventListener('htmx:beforeRequest', (e) => {
     const tableName = elt.dataset?.tableName;
     if (tableName) {
         selectedTableName = tableName;
-        const queryEditor = document.getElementById('query-editor');
-        if (queryEditor) queryEditor.value = `SELECT * FROM ${tableName};`;
+        setQueryValue(`SELECT * FROM ${tableName};`);
     }
     const schemaContainer = document.getElementById('table-schema-container');
     const columnsContainer = document.getElementById('table-columns-container');
@@ -65,7 +108,8 @@ document.body.addEventListener('htmx:afterSettle', () => {
 document.body.addEventListener('htmx:beforeRequest', (e) => {
     const form = e.detail?.elt?.closest?.('form');
     if (form?.id !== 'query-form') return;
-    const query = (document.getElementById('query-editor')?.value || '').trim();
+    syncQueryToTextarea();
+    const query = getQueryValue().trim();
     if (!query) {
         e.preventDefault();
         showStatus('Please enter a query', 'error');
@@ -75,17 +119,16 @@ document.body.addEventListener('htmx:beforeRequest', (e) => {
 // HTMX: after query results swap — sync last-executed-query for Export CSV
 document.body.addEventListener('htmx:afterSwap', (e) => {
     if (e.detail?.target?.id !== 'query-results-area') return;
-    const queryEditor = document.getElementById('query-editor');
     const hiddenLastQuery = document.getElementById('last-executed-query');
-    if (queryEditor && hiddenLastQuery) {
-        hiddenLastQuery.value = queryEditor.value.trim();
+    if (hiddenLastQuery) {
+        hiddenLastQuery.value = getQueryValue().trim();
     }
 });
 
 // Clear query (and last-executed-query so export uses fresh state)
 document.getElementById('clear-btn').addEventListener('click', (e) => {
     e.preventDefault();
-    document.getElementById('query-editor').value = '';
+    setQueryValue('');
     const hiddenLastQuery = document.getElementById('last-executed-query');
     if (hiddenLastQuery) hiddenLastQuery.value = '';
 });
